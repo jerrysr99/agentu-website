@@ -1,5 +1,19 @@
 # agentu.ai
 
+## Cutover / hosts
+
+Read **`docs/CUTOVER.md`** for the full agentu.ai move record (SHIPPED/CLOSED,
+Brand QA YES, DNS, Caddy, nightly schedule, remotes, abandoned paths).
+
+| Role | Host |
+|---|---|
+| Prod UI | `https://agentu.ai` (+ www) — static + same-origin `/api` |
+| Prod POR | `https://proxy.agentu.ai` — `/v1` + `/health` only |
+| DEV | `https://agentu.jerrywlambert.com` — kept |
+
+Canonical memo: `~/projects/sysadmin/requests/2026-09-13-agentu-ai-pages-api-cutover-plan.md`
+
+
 <!-- COS-BOOTSTRAP v1 -->
 ## Management — the COS seat and the board resources
 
