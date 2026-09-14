@@ -23,6 +23,8 @@ fi
 stage_payload() {
   local dest="$1"
   rsync -a --delete \
+    --exclude '.git/' --exclude '.github/' --exclude 'scripts/' \
+    --exclude '.gitignore' --exclude 'CLAUDE.md' --exclude '.DS_Store' \
     --include '*/' \
     --include '*.html' --include '*.css' --include '*.js' --include '*.json' \
     --include '*.png' --include '*.jpg' --include '*.jpeg' \
@@ -55,6 +57,8 @@ else
   echo "→ Stage to ${REMOTE_HOST}:${REMOTE_STAGE}"
   ${RSYNC_SSH} "${REMOTE_HOST}" "rm -rf ${REMOTE_STAGE} && mkdir -p ${REMOTE_STAGE}"
   rsync -avz -e "${RSYNC_SSH}" \
+    --exclude '.git/' --exclude '.github/' --exclude 'scripts/' \
+    --exclude '.gitignore' --exclude 'CLAUDE.md' --exclude '.DS_Store' \
     --include '*/' \
     --include '*.html' --include '*.css' --include '*.js' --include '*.json' \
     --include '*.png' --include '*.jpg' --include '*.jpeg' \
