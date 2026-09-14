@@ -72,7 +72,8 @@ Remotes (jerrywlambert-website style):
 - `github` = `https://github.com/jerrysr99/agentu-website.git` — **live.**
 
 **Live push:** `git push github main`  
-GitHub Actions rsyncs servable assets to aiproxy-saas `/var/www/agentu` (chown caddy).
+GitHub Actions (self-hosted runner **aiproxy-saas**, systemd enabled so EventBridge morning start brings it back) rsyncs servable assets to `/var/www/agentu` (chown caddy).
+GitHub-hosted runners cannot SSH: saas SG allowlists Jerry/VPS IPs only — do not open port 22.
 `git push origin main` archives only and does **not** go live.
 
 Do not point this repo at GitHub Pages. Do not seed from stale `ai-proxy/website/`.
