@@ -1,0 +1,1546 @@
+<!doctype html>
+<!--
+  AgentU — Keys, Vendors & Roles console.
+
+  A SEPARATE page, deliberately not folded into index.html. That SPA has
+  diverged from git (321 lines live on the box that were never committed), and
+  deploy/deploy-website.sh would overwrite it. Shipping this feature as its own
+  file lets it deploy independently and touches none of that.
+
+  Everything here talks to agentu-api at /api/*, which resolves the account from
+  the MFA-cleared session cookie. The account is never sent from the browser.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Keys & Roles · AgentU</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2230; --line:#2b3441;
+    --ink:#e6edf3; --dim:#8b949e; --accent:#3b82f6; --ok:#2ea043;
+    --warn:#d29922; --bad:#f85149; --radius:10px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+       font:14px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  a{color:var(--accent)}
+  header{padding:18px 24px;border-bottom:1px solid var(--line);
+         display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  header h1{font-size:17px;margin:0;font-weight:600}
+  .wrap{max-width:1080px;margin:0 auto;padding:24px}
+  .tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:22px;flex-wrap:wrap}
+  .tab{padding:9px 16px;cursor:pointer;color:var(--dim);border-bottom:2px solid transparent;
+       background:none;border-top:0;border-left:0;border-right:0;font:inherit}
+  .tab.on{color:var(--ink);border-bottom-color:var(--accent)}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+        padding:18px;margin-bottom:16px}
+  .card h2{margin:0 0 4px;font-size:15px}
+  .card p.sub{margin:0 0 16px;color:var(--dim);font-size:13px}
+  label{display:block;margin:12px 0 5px;font-size:12px;color:var(--dim);
+        text-transform:uppercase;letter-spacing:.04em}
+  input,select,textarea{width:100%;padding:9px 11px;background:var(--panel2);
+        border:1px solid var(--line);border-radius:7px;color:var(--ink);font:inherit}
+  textarea{min-height:92px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
+  .hint{font-size:12px;color:var(--dim);margin-top:5px}
+  button{background:var(--accent);color:#fff;border:0;border-radius:7px;
+         padding:9px 16px;font:inherit;font-weight:500;cursor:pointer}
+  button.ghost{background:transparent;border:1px solid var(--line);color:var(--ink)}
+  button.danger{background:transparent;border:1px solid var(--bad);color:var(--bad)}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:16px}
+  /* A table may be wider than a phone; the PAGE may not. Each table gets its
+     own horizontal scroller so the body never scrolls sideways. */
+  .tscroll{overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
+  table{width:100%;border-collapse:collapse;margin-top:6px;min-width:520px}
+  th,td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--line);
+        font-size:13px;vertical-align:top}
+  th{color:var(--dim);font-weight:500;font-size:11px;text-transform:uppercase;letter-spacing:.04em}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;
+       background:var(--panel2);padding:2px 6px;border-radius:4px;
+       overflow-wrap:anywhere}
+  .hint{overflow-wrap:anywhere}
+  .pill{display:inline-block;padding:2px 8px;border-radius:99px;font-size:11px;
+        border:1px solid var(--line);color:var(--dim)}
+  .pill.builtin{border-color:var(--ok);color:var(--ok)}
+  /* Connector row controls. Icon buttons carry a visible label via title and
+     aria-label: an icon alone is not a name, and Remove destroys a credential. */
+  .iconbtn{background:transparent;border:1px solid var(--line);color:var(--ink);
+    border-radius:6px;padding:4px 8px;line-height:1;font-size:14px;cursor:pointer}
+  .iconbtn:hover{border-color:var(--ink)}
+  .iconbtn.danger{border-color:var(--bad);color:var(--bad)}
+  td.actions,th.actions{white-space:nowrap;text-align:right}
+  td.actions .iconbtn{margin-left:6px}
+  /* The toggle. A checkbox underneath, so it is keyboard reachable and
+     announces its checked state, with the switch drawn over it. */
+  .sw{position:relative;display:inline-block;width:40px;height:22px;vertical-align:middle}
+  .sw input{position:absolute;opacity:0;width:100%;height:100%;margin:0;cursor:pointer}
+  .sw .track{position:absolute;inset:0;background:var(--line);border-radius:99px;
+    transition:background .15s;pointer-events:none}
+  .sw .knob{position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;
+    background:#fff;transition:transform .15s;pointer-events:none}
+  .sw input:checked ~ .track{background:var(--ok)}
+  .sw input:checked ~ .knob{transform:translateX(18px)}
+  .sw input:focus-visible ~ .track{outline:2px solid var(--ink);outline-offset:2px}
+  .sw input:disabled ~ .track{opacity:.5}
+  /* The editable name. Looks like text until focused, so the row stays calm
+     but the field still says it is editable on hover/focus. */
+  .nameedit{background:transparent;border:1px solid transparent;border-radius:6px;
+    color:var(--ink);font:inherit;padding:3px 6px;width:100%;max-width:220px}
+  .nameedit:hover{border-color:var(--line)}
+  .nameedit:focus{border-color:var(--ink);outline:none;background:var(--bg)}
+  .idhint{font-size:11px;color:var(--dim);padding-left:6px}
+  .msg{padding:11px 13px;border-radius:7px;margin:14px 0;font-size:13px;display:none}
+  /* The .msg kind classes below each set display:block, which beats the hidden
+     attribute's UA rule on specificity -- so an element toggled with .hidden
+     would stay visible. */
+  [hidden]{display:none !important}
+  .msg.err{background:rgba(248,81,73,.12);border:1px solid var(--bad);color:#ffb4ae;display:block}
+  .msg.ok{background:rgba(46,160,67,.12);border:1px solid var(--ok);color:#7ee787;display:block}
+  .msg.warn{background:rgba(210,153,34,.12);border:1px solid var(--warn);color:#e3b341;display:block}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-top:8px}
+  .chk{display:flex;align-items:center;gap:8px;background:var(--panel2);
+       border:1px solid var(--line);border-radius:7px;padding:8px 10px}
+  .chk input{width:auto}
+  /* Two-pane model picker. A model is in exactly one pane at a time, so the
+     left list always answers "what is left to add" without the reader having
+     to diff two lists in their head. */
+  .picker{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px}
+  .pane{border:1px solid var(--line);border-radius:8px;background:var(--panel2);
+    display:flex;flex-direction:column;min-width:0}
+  .panehead{display:flex;align-items:center;justify-content:space-between;gap:8px;
+    padding:8px 10px;border-bottom:1px solid var(--line);font-size:13px;font-weight:600}
+  .panelist{height:240px;overflow-y:auto;padding:6px}
+  .panelist .row{display:flex;align-items:center;justify-content:space-between;gap:8px;
+    padding:6px 8px;border-radius:6px;cursor:pointer;font-size:13px}
+  .panelist .row:hover{background:var(--panel)}
+  .panelist .row .vend{opacity:.6;font-size:11px;white-space:nowrap}
+  .panelist .empty{padding:10px;opacity:.6;font-size:12.5px}
+  button.small{padding:3px 9px;font-size:12px}
+  @media(max-width:720px){.picker{grid-template-columns:1fr}.panelist{height:180px}}
+  .empty{color:var(--dim);padding:18px 0;font-size:13px}
+  .keyout{background:#000;border:1px solid var(--ok);border-radius:7px;padding:14px;margin-top:14px}
+  .keyout code{background:none;color:#7ee787;font-size:13px;word-break:break-all}
+  @media(max-width:640px){.wrap{padding:16px}header{padding:14px 16px}}
+</style>
+</head>
+<body>
+<header>
+  <h1>AgentU · Keys &amp; Roles</h1>
+  <span class="pill" id="acct">signed in</span>
+  <span style="flex:1"></span>
+  <a href="#" id="bootstrapLink">Bootstrap for your agent →</a>
+</header>
+
+<div class="wrap">
+  <div class="tabs">
+    <button class="tab on" data-tab="vendors">Connectors</button>
+    <button class="tab" data-tab="roles">Roles</button>
+    <button class="tab" data-tab="keys">Proxy keys</button>
+    <button class="tab" data-tab="connect">Connect an app</button>
+    <button class="tab" data-tab="bootstrap">Bootstrap</button>
+  </div>
+
+  <div class="msg" id="msg"></div>
+
+  <!-- ── Connectors (the tenant's own LLM vendor credentials) ─────────── -->
+  <section id="tab-vendors">
+    <div class="card" id="keyForm">
+      <h2>Add a connector</h2>
+      <p class="sub">Your key is stored for your account only and is never shown back to
+        you or to anyone else after you save it. Create a dedicated API key in the
+        provider's console — never give us an account password or login.</p>
+
+      <div class="hint" id="editHint" style="display:none"></div>
+
+      <label for="vendor">Vendor</label>
+      <select id="vendor"><option value="">Select a vendor…</option></select>
+      <div class="hint" id="vendorHint"></div>
+
+      <label for="keyname">Name for this key</label>
+      <input id="keyname" placeholder="e.g. production, billing-account-2" autocomplete="off">
+      <div class="hint">Your own label, so you can tell several keys apart.</div>
+
+      <div id="fields"></div>
+
+      <div class="row">
+        <button id="saveKey" disabled>Save key</button>
+        <button class="ghost" id="clearKey" type="button">Clear</button>
+      </div>
+      <div class="row" id="postSaveTest" hidden style="margin-top:10px"></div>
+    </div>
+
+    <!-- Connector detail: the vendor's models. Shown only while editing one
+         connector, because this is scoped to THAT vendor -- and because it is
+         the only place a switched-off model is visible, so it can be switched
+         back on. -->
+    <div class="card" id="modelCard" hidden>
+      <h2 id="modelCardTitle">Models</h2>
+      <p class="sub">Switch a model off and it stops existing for this account:
+        no dropdown offers it, no role can grant it, and a request naming it is
+        rejected as inactive. It stays listed here so you can switch it back on.
+        Prices are per 1M tokens.</p>
+      <div class="tscroll"><table id="modelTable"><thead><tr>
+        <th>Model</th><th>Input</th><th>Output</th><th>Available</th>
+        <th>End of life</th><th>Active</th>
+      </tr></thead><tbody></tbody></table></div>
+      <div class="empty" id="modelEmpty" hidden>No models listed for this vendor.</div>
+    </div>
+
+    <div class="card">
+      <h2>Your connectors</h2>
+      <p class="sub">Values are masked and never shown back. Rename one by editing its name.
+        Use the pencil to replace its credential, the switch to stop routing on it without
+        losing it, and the bin to destroy the stored value.</p>
+      <div class="tscroll"><table id="pkTable"><thead><tr>
+        <th>Name</th><th>Vendor</th><th>Value</th><th>Active</th><th>Updated</th><th class="actions">Actions</th>
+      </tr></thead><tbody></tbody></table></div>
+      <div class="empty" id="pkEmpty">No connectors yet.</div>
+    </div>
+  </section>
+
+  <!-- ── Roles ───────────────────────────────────────────────────────── -->
+  <section id="tab-roles" hidden>
+    <div class="card" id="roleLocked" hidden>
+      <h2>Roles are part of the higher plans</h2>
+      <p class="sub" id="roleLockedWhy"></p>
+      <p class="sub">Your account keeps working exactly as it does now: one key,
+        the Admin department and the Admin role, which reaches every active model.</p>
+      <a class="btn" id="roleUpgrade" href="/#/plan" target="_blank" rel="noopener">See plans and upgrade &rarr;</a>
+    </div>
+
+    <div class="card" id="roleBuilder">
+      <h2 id="roleFormTitle">Create a role</h2>
+      <div class="msg warn" id="editNote" hidden></div>
+      <p class="sub">A role decides which models a proxy key may call. Move the
+        models this role should reach into the right-hand list.</p>
+
+      <label for="rolename">Role name</label>
+      <input id="rolename" placeholder="e.g. Support bot, Research" autocomplete="off">
+
+      <label>Models</label>
+      <div class="picker">
+        <div class="pane">
+          <div class="panehead">
+            <span>Available <span class="pill" id="availCount">0</span></span>
+            <button type="button" class="ghost small" id="selectAll">Select all</button>
+          </div>
+          <div class="panelist" id="availList"></div>
+        </div>
+        <div class="pane">
+          <div class="panehead">
+            <span>In this role <span class="pill" id="pickedCount">0</span></span>
+            <button type="button" class="ghost small" id="unselectAll">Unselect all</button>
+          </div>
+          <div class="panelist" id="pickedList"></div>
+        </div>
+      </div>
+      <div class="hint">Click a model to move it. Only models active on your
+        account are listed, and a key with this role may call exactly these.</div>
+
+      <div class="row">
+        <button id="saveRole" disabled>Create role</button>
+        <button class="ghost" id="clearRole" type="button">Clear</button>
+        <button class="ghost" id="cancelEdit" type="button" hidden>Cancel edit</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Roles</h2>
+      <div class="tscroll"><table id="roleTable"><thead><tr>
+        <th>Role</th><th>Grants</th><th>Models</th><th></th>
+      </tr></thead><tbody></tbody></table></div>
+    </div>
+  </section>
+
+  <!-- ── Proxy keys ──────────────────────────────────────────────────── -->
+  <section id="tab-keys" hidden>
+    <div class="card">
+      <h2>Mint a proxy key</h2>
+      <p class="sub">This is the key your agent sends to us. It can call only the models
+        its role allows.</p>
+
+      <label for="krole">Role <span style="text-transform:none;color:#e3b341">required</span></label>
+      <select id="krole"></select>
+      <div class="hint">Decides which models this key may call. Admin covers every
+        model active on the proxy, including ones added later.</div>
+
+      <label for="kdept">Department <span style="text-transform:none;color:#e3b341">required</span></label>
+      <select id="kdept"></select>
+      <div class="hint">Every TDR this key writes is attributed to this department.
+        It is a property of the KEY, not of the person: someone working across two
+        departments holds two keys. Both travel with the key through a rotation.</div>
+
+      <label for="kassign">Send to <span style="text-transform:none">(optional)</span></label>
+      <input id="kassign" type="email" placeholder="developer@example.com" autocomplete="off">
+      <div class="hint">The key is named for whoever it belongs to. Leave this blank
+        and the key is yours &mdash; named for your address and shown here once.
+        Enter someone else's and we email them a one-time link to collect it; the
+        key is never put in an email, and you will not see it either.</div>
+
+      <div class="row"><button id="mintKey">Mint key</button></div>
+      <div id="mintOut"></div>
+    </div>
+
+    <div class="card">
+      <h2>Your proxy keys</h2>
+      <div class="tscroll"><table id="keyTable"><thead><tr>
+        <th>Label</th><th>Key</th><th>Role</th><th></th>
+      </tr></thead><tbody></tbody></table></div>
+      <div class="empty" id="keyEmpty">No proxy keys yet.</div>
+    </div>
+  </section>
+
+  <!-- ── Bootstrap ───────────────────────────────────────────────────── -->
+  <!-- ── Connect an app ───────────────────────────────────────────────── -->
+  <section id="tab-connect" hidden>
+    <div class="card">
+      <h2>Connect an app to the proxy</h2>
+      <p class="sub">Every route below lands on the same place: your account, your
+        department, your spend limits, one TDR per call. Pick the one your app
+        supports.</p>
+
+      <h3 style="margin-top:18px">1. Apps that connect with a sign-in (MCP)</h3>
+      <p class="sub">Claude Desktop and other MCP clients. Nothing to paste: add
+        the URL, then sign in and choose a role when prompted.</p>
+      <div class="kv"><div class="cell"><div class="k">MCP server URL</div>
+        <div class="v mono" id="mcpUrl">https://mcp.jerrywlambert.com/mcp</div></div></div>
+      <div class="row"><button class="ghost" id="copyMcp">Copy URL</button></div>
+      <p class="hint">You choose which of your own keys the app mirrors. It gets
+        its own new key named for that app, carrying the <b>same department and
+        role</b> as the one you picked, so a connected app can never reach
+        further than you can. It appears under Proxy keys. Revoke it there to
+        disconnect the app and nothing else.</p>
+
+      <h3 style="margin-top:22px">2. Apps that take a custom header</h3>
+      <p class="sub">Use your own proxy key. Some apps reserve
+        <span class="mono">Authorization</span> for their own sign-in, which is why
+        the second form exists.</p>
+      <div class="kv">
+        <div class="cell"><div class="k">Header name</div><div class="v mono">x-api-key</div></div>
+        <div class="cell"><div class="k">Header value</div><div class="v mono">cpk_… (your key, no prefix)</div></div>
+      </div>
+      <div class="kv" style="margin-top:8px">
+        <div class="cell"><div class="k">Or header name</div><div class="v mono">Authorization</div></div>
+        <div class="cell"><div class="k">Value</div><div class="v mono">Bearer cpk_…</div></div>
+      </div>
+      <p class="hint">Either works. Do not put <span class="mono">Bearer</span> in
+        front of the value when the header is <span class="mono">x-api-key</span>.</p>
+
+      <h3 style="margin-top:22px">3. Coding clients and SDKs</h3>
+      <p class="sub">Claude Code, Cline, Continue, Aider, Zed, the OpenAI and
+        Anthropic SDKs. Point the base URL at the proxy and change nothing else.</p>
+      <div class="kv">
+        <div class="cell"><div class="k">Base URL</div><div class="v mono">https://agentu.jerrywlambert.com</div></div>
+        <div class="cell"><div class="k">API key</div><div class="v mono">cpk_… (your key)</div></div>
+      </div>
+      <p class="hint">Both dialects are served natively:
+        <span class="mono">/v1/messages</span> (Anthropic) and
+        <span class="mono">/v1/chat/completions</span> (OpenAI).</p>
+      <label style="margin-top:16px">Claude Code, MCP tools</label>
+      <textarea readonly style="min-height:66px" id="ccCmd">claude mcp add --transport http agentu https://mcp.jerrywlambert.com/mcp --header "x-api-key: cpk_YOUR_KEY"</textarea>
+      <div class="row"><button class="ghost" id="copyCc">Copy command</button></div>
+
+      <h3 style="margin-top:22px">What does not work, and why</h3>
+      <p class="sub">Cursor and GitHub Copilot's in-IDE agent modes broker the model
+        on their own backend and offer no way to point them at another endpoint, so
+        their spend cannot be governed here. GitHub Copilot CLI and Copilot in
+        GitHub Desktop do support it, via their BYOK settings, using the base URL
+        above. We would rather say so than let you discover it in a pilot.</p>
+    </div>
+  </section>
+
+  <section id="tab-bootstrap" hidden>
+    <div class="card">
+      <h2>Bootstrap your agent</h2>
+      <p class="sub">Paste this into your agent's system prompt or chief-of-staff brief.
+        It tells the platform how to reach the proxy and how to behave well against it.
+        It contains no key — your key belongs in an environment variable.</p>
+      <textarea id="bootstrapText" readonly style="min-height:420px"></textarea>
+      <div class="row">
+        <button id="copyBootstrap">Copy to clipboard</button>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+"use strict";
+
+var VENDORS = {}, MODELS = {by_vendor:{}, models:[]}, ROLES = [];
+
+function msg(text, kind){
+  var el = document.getElementById("msg");
+  el.className = "msg " + (kind || "ok");
+  el.textContent = text;
+  if (kind !== "err") setTimeout(function(){ el.className = "msg"; }, 6000);
+}
+
+/* A structured server error (a headline, an explanation, a remedy and a real
+   link) rendered as such. Flattening it to one sentence would throw away the
+   action -- the whole reason it is structured is that "you have hit your key
+   limit" is useless without "here is how to get more". textContent for every
+   server-supplied string; only the link is markup, and its href is checked. */
+function msgDetail(d, kind){
+  var el = document.getElementById("msg");
+  el.className = "msg " + (kind || "err");
+  el.textContent = "";
+  var h = document.createElement("strong");
+  h.textContent = d.title || "That did not work";
+  el.appendChild(h);
+  [d.message, d.remedy].forEach(function(line){
+    if (!line) return;
+    var p = document.createElement("div");
+    p.style.marginTop = "4px";
+    p.textContent = line;
+    el.appendChild(p);
+  });
+  if (d.upgrade_url && /^https?:\/\//.test(d.upgrade_url)){
+    var a = document.createElement("a");
+    a.href = d.upgrade_url; a.target = "_blank"; a.rel = "noopener";
+    a.textContent = "See plans and upgrade \u2192";
+    a.style.display = "inline-block"; a.style.marginTop = "8px";
+    el.appendChild(a);
+  }
+}
+
+async function api(method, path, body){
+  var opt = {method:method, credentials:"same-origin", headers:{}};
+  if (body !== undefined){
+    opt.headers["Content-Type"] = "application/json";
+    opt.body = JSON.stringify(body);
+  }
+  var r = await fetch("/api" + path, opt);
+  var text = await r.text();
+  var data = {};
+  try { data = text ? JSON.parse(text) : {}; } catch(e){ data = {raw:text}; }
+  if (r.status === 401){ location.href = "/"; throw new Error("signed out"); }
+  if (!r.ok){
+    // Surface the server's own wording: those messages are written for the
+    // person pasting a credential ("that looks like an email address"), and
+    // replacing them with a generic failure would throw away the help.
+    // A structured detail travels on the Error so the caller can render it
+    // properly; message stays populated for callers that only show text.
+    var det = data.detail || data.error;
+    if (det && typeof det === "object"){
+      var e = new Error(det.message || det.title || "request failed");
+      e.detail = det;
+      throw e;
+    }
+    throw new Error(det || ("request failed (" + r.status + ")"));
+  }
+  return data;
+}
+
+/* ── tabs ─────────────────────────────────────────────────────────────── */
+document.querySelectorAll(".tab").forEach(function(t){
+  t.onclick = function(){
+    document.querySelectorAll(".tab").forEach(function(x){ x.classList.remove("on"); });
+    t.classList.add("on");
+    ["vendors","roles","keys","connect","bootstrap"].forEach(function(name){
+      document.getElementById("tab-" + name).hidden = (name !== t.dataset.tab);
+    });
+    if (t.dataset.tab === "bootstrap") loadBootstrap();
+    // Keep the address bar honest so the tab survives a reload and can be
+    // linked to. replaceState, not a hash assignment, so it adds no history
+    // entry -- Back should leave the console, not walk back through tabs.
+    if (window.history && history.replaceState){
+      history.replaceState(null, "", "#" + t.dataset.tab);
+    }
+  };
+});
+
+/* Deep link: the sidebar sends Roles to /keys.html#roles. An unknown or absent
+   hash falls through to the default tab rather than showing nothing. */
+function openTabFromHash(){
+  var want = (location.hash || "").replace(/^#/, "");
+  var tab = want && document.querySelector('.tab[data-tab="' + want.replace(/"/g, '') + '"]');
+  if (tab) tab.click();
+}
+openTabFromHash();
+window.addEventListener("hashchange", openTabFromHash);
+
+/* ── provider keys ────────────────────────────────────────────────────── */
+function renderFields(){
+  var spec = VENDORS[document.getElementById("vendor").value];
+  var host = document.getElementById("fields");
+  host.innerHTML = "";
+  document.getElementById("vendorHint").textContent =
+    spec ? (spec.notes || "") : "";
+  if (!spec){ checkKeyForm(); return; }
+
+  spec.fields.forEach(function(f){
+    var id = "f_" + f.name;
+    var lab = document.createElement("label");
+    lab.htmlFor = id;
+    lab.textContent = f.label + (f.required ? "" : " (optional)");
+    host.appendChild(lab);
+
+    // A long credential (a service-account JSON) needs a textarea; a one-line
+    // secret gets a password input so it is not shoulder-surfed while typing.
+    var isBlob = f.name === "service_account_json";
+    var el = document.createElement(isBlob ? "textarea" : "input");
+    el.id = id;
+    el.dataset.field = f.name;
+    el.dataset.required = f.required ? "1" : "";
+    if (!isBlob) el.type = f.secret ? "password" : "text";
+    if (f.placeholder) el.placeholder = f.placeholder;
+    el.autocomplete = "off";
+    el.oninput = checkKeyForm;
+    host.appendChild(el);
+
+    if (f.help){
+      var h = document.createElement("div");
+      h.className = "hint";
+      h.textContent = f.help;
+      host.appendChild(h);
+    }
+  });
+  if (spec.console_url){
+    var a = document.createElement("div");
+    a.className = "hint";
+    a.style.marginTop = "10px";
+    a.innerHTML = 'Create a key here: <a target="_blank" rel="noopener noreferrer" href="' +
+                  spec.console_url + '">' + spec.console_url + "</a>";
+    host.appendChild(a);
+  }
+  checkKeyForm();
+}
+
+function checkKeyForm(){
+  var ok = !!document.getElementById("vendor").value &&
+           !!document.getElementById("keyname").value.trim();
+  document.querySelectorAll("#fields [data-required='1']").forEach(function(el){
+    if (!el.value.trim()) ok = false;
+  });
+  document.getElementById("saveKey").disabled = !ok;
+}
+
+async function saveProviderKey(){
+  var name = document.getElementById("keyname").value.trim();
+  var provider = document.getElementById("vendor").value;
+  var fields = {};
+  document.querySelectorAll("#fields [data-field]").forEach(function(el){
+    if (el.value.trim()) fields[el.dataset.field] = el.value.trim();
+  });
+  var btn = document.getElementById("saveKey");
+  btn.disabled = true;
+  try {
+    // Replacing a credential is not a rename: omitting the label leaves
+    // whatever name the tenant gave this connector in the row above intact.
+    var body = {provider:provider, fields:fields};
+    if (!editingKey) body.label = name;
+    var r = await api("PUT", "/account/provider-keys/" + encodeURIComponent(name), body);
+    // The save already ran the vendor check; report it rather than a bare
+    // "Saved", which tells the customer nothing about whether the key works.
+    var t = (r && r.test) || null;
+    if (t && t.ok === false){
+      msg((editingKey ? "Replaced the credential for " : "Saved ") + name +
+          ", but the connection test FAILED: " + (t.detail || "no reason given") +
+          ". Use Test to re-check after fixing it.", "err");
+    } else if (t && t.ok){
+      msg((editingKey ? "Replaced the credential for " : "Saved ") + name +
+          " and confirmed the connection." +
+          (t.balance ? " Balance: " + t.balance + "." : ""), "ok");
+    } else {
+      msg(editingKey ? "Replaced the credential for " + name + "."
+                     : "Saved " + name + ".", "ok");
+    }
+    // Clear FIRST: clearKeyForm() hides the post-save panel, so showing it
+    // beforehand meant the Test button appeared and was wiped on the next line.
+    clearKeyForm();
+    showPostSaveTest(name);
+    await loadProviderKeys().catch(function(e){
+      msg("Saved, but the list could not refresh: " + e.message, "err"); });
+  } catch(e){
+    msg(e.message, "err");
+    btn.disabled = false;
+  }
+}
+
+function clearKeyForm(){
+  endEditProviderKey();
+  var pst = document.getElementById("postSaveTest");
+  if (pst){ pst.hidden = true; pst.innerHTML = ""; }
+  document.getElementById("keyname").value = "";
+  // Reset the VENDOR too, and re-render the field spec from it. Blanking only
+  // the values left the previous vendor selected with its own fields still on
+  // screen -- so after saving Anthropic the form still read "Anthropic" and
+  // showed an Anthropic API-key box, which looks like the save did not take.
+  // renderFields() with no vendor empties #fields and the hint.
+  var v = document.getElementById("vendor");
+  if (v) v.value = "";
+  renderFields();
+  checkKeyForm();
+}
+
+/* Load one connector into the form above so its credential can be replaced.
+
+   A stored secret is never returned to a browser, so there is nothing to
+   prefill and nothing to "edit" in place -- replacing the credential is the
+   only real edit. The vendor and name are fixed while editing: saving under a
+   different name would create a SECOND connector rather than update this one,
+   and the vendor is half the address the secret is stored under. To rename,
+   edit the name in the row; to add another, use the form when it is clear. */
+var editingKey = null;
+
+function editProviderKey(name, rec){
+  var vendor = document.getElementById("vendor");
+  var keyname = document.getElementById("keyname");
+  vendor.value = (rec && rec.provider) || "";
+  renderFields();
+  keyname.value = name;
+  // Locked, with the reason visible rather than a silently dead control.
+  vendor.disabled = true; keyname.disabled = true;
+  editingKey = name;
+  var hint = document.getElementById("editHint");
+  hint.textContent = 'Replacing the credential for "' + name +
+    '". Enter the new value and save. Press Clear to cancel.';
+  hint.style.display = "";
+  document.getElementById("saveKey").textContent = "Replace credential";
+  checkKeyForm();
+  // Send the user where the work is; the row may be far below the form.
+  document.getElementById("keyForm").scrollIntoView({behavior:"smooth", block:"start"});
+  if(vendor.value){
+    loadVendorModels(vendor.value);
+  } else {
+    // A legacy connector carries no provider, so the vendor select cannot be
+    // set. Opening the card with a blank vendor used to list the WHOLE catalog
+    // under one vendor's heading, with live account-wide toggles.
+    const mc = document.getElementById("modelCard");
+    if(mc) mc.hidden = true;
+    msg("This connector predates vendor records, so its models cannot be "
+        + "listed. Replace it to store it in the vault.", "err");
+  }
+  var first = document.querySelector("#fields [data-field]");
+  if (first) first.focus();
+}
+
+/* The vendor's models, at the bottom of the connector detail form.
+
+   Shows EVERY model the proxy carries for that vendor, including ones this
+   account has switched off -- this is the only surface that does, and the only
+   place they can be switched back on. */
+function fmtUsd(n){
+  if(n === null || n === undefined || n === '') return '—';
+  const v = Number(n);
+  // 0 means we hold no price for this model, not that it is free. On a product
+  // whose thesis is financial transparency, "$0.0000" is the wrong answer.
+  if(!isFinite(v) || v === 0) return '—';
+  // Sub-dollar prices need more places than a dollar figure does.
+  return '$' + (v >= 1 ? v.toFixed(2) : v.toFixed(v >= 0.1 ? 3 : 4));
+}
+
+/* Re-pull the role-builder's model list after an account-level model switch,
+   so the two surfaces cannot disagree about what may be granted. */
+async function refreshModelCatalog(){
+  // Same shape init uses: the whole {models, by_vendor} response, not the list.
+  MODELS = await api("GET", "/account/models");
+  if (typeof renderRoleBuilder === "function") renderRoleBuilder();
+}
+
+async function loadVendorModels(provider){
+  const card = document.getElementById("modelCard");
+  const body = document.querySelector("#modelTable tbody");
+  const empty = document.getElementById("modelEmpty");
+  if(!card) return;
+  card.hidden = false;
+  document.getElementById("modelCardTitle").textContent = provider + " models";
+  body.innerHTML = "";
+  let rows = [];
+  try {
+    const r = await api("GET", "/account/vendor-models?provider=" +
+                        encodeURIComponent(provider));
+    rows = (r && r.models) || [];
+  } catch(e){ msg(e.message, "err"); return; }
+
+  empty.hidden = rows.length > 0;
+  rows.forEach(function(m){
+    const tr = document.createElement("tr");
+    // An EOL date in the past is the thing a tenant most needs to notice, so it
+    // is called out rather than left as one date among several.
+    // The server decides what "retired" means; the browser must not re-derive
+    // it from a clock that may not agree.
+    // Three separate reasons the router will not serve a model, only one of
+    // which is EOL. The row used to mark only that, so an unapproved or
+    // withdrawn model rendered as fully available with a green toggle.
+    const past = !!m.retired;
+    const routable = (m.routable !== undefined)
+        ? !!m.routable
+        : (m.approved !== false && !m.deprecated && !past);
+    const whyNot = past ? "retired"
+                 : (m.deprecated ? "withdrawn by vendor"
+                 : (m.approved === false ? "not offered by the proxy" : ""));
+    tr.innerHTML =
+      "<td>" + esc(m.display_name || m.model_id) +
+        '<div class="hint"><code>' + esc(m.model_id) + "</code>" +
+        (routable ? "" : ' · <span class="pill">' + esc(whyNot) + "</span>") +
+        "</div></td>" +
+      "<td>" + esc(fmtUsd(m.input_per_1m)) + "</td>" +
+      "<td>" + esc(fmtUsd(m.output_per_1m)) + "</td>" +
+      "<td>" + esc(m.available || "—") + "</td>" +
+      "<td>" + (m.eol
+                  ? (past ? '<span class="pill">' + esc(m.eol) + " \u00b7 retired</span>"
+                          : esc(m.eol))
+                  : '<span class="hint">none announced</span>') + "</td>" +
+      "<td></td>";
+
+    const wrap = document.createElement("label");
+    wrap.className = "sw";
+    wrap.title = m.active ? "Switch this model off for the account"
+                          : "Switch this model back on";
+    const cb = document.createElement("input");
+    cb.type = "checkbox"; cb.checked = !!m.active;
+    cb.setAttribute("aria-label", "Active: " + m.model_id);
+    const track = document.createElement("span"); track.className = "track";
+    const knob  = document.createElement("span"); knob.className  = "knob";
+    wrap.appendChild(cb); wrap.appendChild(track); wrap.appendChild(knob);
+    cb.onchange = async function(){
+      const want = cb.checked;
+      cb.disabled = true;
+      try {
+        await api("POST", "/account/models/" + encodeURIComponent(m.model_id) +
+                  "/enabled", { enabled: want });
+        msg(want ? "Switched " + m.model_id + " on."
+                 : "Switched " + m.model_id + " off. It no longer appears in "
+                   + "dropdowns and requests naming it are rejected as inactive.",
+            "ok");
+        // The toast claims the dropdowns changed, so make that true on this
+        // page too: MODELS is fetched once at init, and without this the tenant
+        // could walk to the Roles tab and build a role granting the model they
+        // just switched off. Test Board, 2026-09-11.
+        await refreshModelCatalog().catch(function(){});
+        cb.disabled = false;
+      } catch(e){
+        cb.checked = !want;        // the server refused; do not show it as done
+        cb.disabled = false;
+        msg(e.message, "err");
+      }
+    };
+    tr.lastChild.appendChild(wrap);
+    body.appendChild(tr);
+  });
+}
+
+function endEditProviderKey(){
+  editingKey = null;
+  var vendor = document.getElementById("vendor");
+  var keyname = document.getElementById("keyname");
+  vendor.disabled = false; keyname.disabled = false;
+  var hint = document.getElementById("editHint");
+  hint.textContent = ""; hint.style.display = "none";
+  document.getElementById("saveKey").textContent = "Save key";
+  const mc = document.getElementById("modelCard");
+  if(mc) mc.hidden = true;
+}
+
+/* The Test button on the CREATE form, shown after a save.
+
+   The save already probed once. This is for the second look: you fix a key at
+   the vendor, come back, and want to confirm without hunting for the row. */
+/* Retire the post-save panel the moment a NEW entry begins.
+
+   It names the connector just saved ("Last saved: my-anthropic"), which is
+   useful right after a save and misleading the instant someone starts adding a
+   different vendor: the form above is blank but the previous vendor's name is
+   still on screen under it, which reads as "the form did not clear". */
+function hidePostSaveTest(){
+  var pst = document.getElementById("postSaveTest");
+  if (pst && !pst.hidden){ pst.hidden = true; pst.innerHTML = ""; }
+}
+
+function showPostSaveTest(name){
+  var host = document.getElementById("postSaveTest");
+  if (!host) return;
+  host.innerHTML = "";
+  host.hidden = false;
+  var label = document.createElement("span");
+  label.className = "hint";
+  label.textContent = "Last saved: " + name + " ";
+  var b = document.createElement("button");
+  b.className = "ghost";
+  b.textContent = "Test connection";
+  b.onclick = function(){ runConnectorTest(name, b, {textual: true}); };
+  host.appendChild(label);
+  host.appendChild(b);
+}
+
+/* Run the vendor connection check for one connector and report it plainly.
+
+   Read-only and never billed. Shared by the row button and the one on the
+   create form, so the two cannot report differently for the same connector. */
+async function runConnectorTest(name, btn, opts){
+  opts = opts || {};
+  var was = btn ? btn.innerHTML : "";
+  if (btn){ btn.disabled = true; if (opts.textual) btn.textContent = "Testing…"; }
+  try {
+    var r = await api("POST", "/account/provider-keys/" +
+                      encodeURIComponent(name) + "/test");
+    if (r && r.ok === null){
+      msg((r.provider || name) + " publishes no connection check, so this "
+          + "credential cannot be verified here. It will be proven by the "
+          + "first real request.", "err");
+    } else if (r && r.ok){
+      msg("Connection to " + (r.provider || name) + " confirmed." +
+          (r.balance ? " Balance: " + r.balance + "." : ""), "ok");
+    } else {
+      // The vendor's own words. "Test failed" alone sends people hunting.
+      msg("Connection test FAILED for " + name + ": " +
+          ((r && r.detail) || "no reason given") +
+          ". The credential is still stored; replace it with the pencil.", "err");
+    }
+    if (!opts.skipReload){
+      await loadProviderKeys().catch(function(e){
+        msg("Tested, but the list could not refresh: " + e.message, "err"); });
+    }
+    return r;
+  } catch(e){
+    msg(e.message, "err");
+    return null;
+  } finally {
+    if (btn){ btn.disabled = false; if (opts.textual) btn.textContent = was;
+              else btn.innerHTML = was; }
+  }
+}
+
+async function loadProviderKeys(){
+  var data = await api("GET", "/account/provider-keys");
+  var keys = data.provider_keys || {};
+  var body = document.querySelector("#pkTable tbody");
+  body.innerHTML = "";
+  var names = Object.keys(keys);
+  document.getElementById("pkEmpty").style.display = names.length ? "none" : "";
+  names.forEach(function(n){
+    var k = keys[n] || {};
+    var tr = document.createElement("tr");
+    // The record holds NO secret. Show the fingerprint (which identifies the
+    // credential without revealing it) and the config half in clear -- a
+    // region, an endpoint, a deployment, an AWS access key id. Those are
+    // identifiers, and showing them is how the tenant confirms which
+    // credential they connected.
+    var shown = typeof k === "string" ? k : (k.fingerprint || "stored");
+    var cfg = (k && k.config) || {};
+    var cfgBits = Object.keys(cfg).map(function(f){
+      return esc(f) + "=" + esc(cfg[f]);
+    }).join("  ");
+    // Two separate facts, deliberately not collapsed into one word. `enabled`
+    // is the toggle the tenant controls; `active` is whether the proxy would
+    // actually route on it. A connector can be switched ON and still be
+    // inactive -- a vault write that failed after the record was created
+    // leaves exactly that. Showing only the toggle would tell that tenant
+    // everything is fine while nothing routes.
+    var enabled = (typeof k === "string") ? true : (k.enabled !== false);
+    var active  = (typeof k === "string") ? true : (k.active === true);
+    // Three states, not two: never tested is NOT the same as failed, and
+    // showing a red mark on a connector nobody checked would be a lie.
+    var vOk = (typeof k === "string") ? null : k.verify_ok;
+    var vAt = (typeof k === "string") ? "" : (k.verified_at || "");
+    // FOUR states, because "this vendor cannot be tested" is its own fact and
+    // must not borrow the look of either a pass or a failure.
+    var vDetail = (typeof k === "string") ? "" : (k.verify_detail || "");
+    var testMark;
+    if (vAt && vOk === true){
+      testMark = '<div class="hint">tested ' + esc(vAt.slice(0,10)) + ' \u00b7 ok</div>';
+    } else if (vAt && vOk === false){
+      testMark = '<div class="hint" style="color:var(--bad)">test failed: '
+               + esc(vDetail.slice(0,60)) + '</div>';
+    } else if (vDetail){
+      // No timestamp but a reason: the vendor publishes no connection check.
+      testMark = '<div class="hint" style="color:var(--warn,#d29922)">'
+               + 'cannot be tested \u00b7 ' + esc(vDetail.slice(0,70)) + '</div>';
+    } else {
+      testMark = '<div class="hint">not tested yet</div>';
+    }
+    tr.innerHTML =
+      "<td></td><td>" + esc(k.provider || "") +
+      "</td><td><code>" + esc(String(shown)) + "</code>" +
+      (cfgBits ? '<div class="hint">' + cfgBits + "</div>" : "") +
+      testMark +
+      (k.balance ? '<div class="hint">balance: ' + esc(k.balance) + "</div>" : "") +
+      "</td><td></td><td>" + esc((k.updated_at || "").slice(0,10)) +
+      '</td><td class="actions"></td>';
+
+    /* ---- name: an editable label over an immutable id ----
+       The credential's `name` is half the address its secret is stored under,
+       so it cannot move without a second write that could fail on the money
+       path. The LABEL is what a tenant means by the connector's name, so that
+       is what this edits. The id stays visible but quiet, because it is what
+       appears in the request log. */
+    var nameCell = tr.children[0];
+    var input = document.createElement("input");
+    input.className = "nameedit";
+    input.value = (typeof k === "string") ? n : (k.label || n);
+    input.setAttribute("aria-label", "Name for connector " + n);
+    input.title = "Rename this connector";
+    var lastSaved = input.value;
+    async function saveName(){
+      var v = input.value.trim();
+      if (v === lastSaved) return;
+      if (!v){ input.value = lastSaved; return; }   // a blank name is not a rename
+      try {
+        await api("POST", "/account/provider-keys/" + encodeURIComponent(n) +
+                  "/label", { label: v });
+        lastSaved = v;
+        msg("Renamed to " + v + ".", "ok");
+        // Re-render, as the toggle does. The row shows the immutable id under
+        // the name once the two differ, and that only appears on a rebuild.
+        await loadProviderKeys().catch(function(e){
+          msg("Renamed, but the list could not refresh: " + e.message, "err"); });
+      } catch(e){ input.value = lastSaved; msg(e.message, "err"); }
+    }
+    input.onblur = saveName;
+    input.onkeydown = function(ev){
+      if (ev.key === "Enter"){ ev.preventDefault(); input.blur(); }
+      // Escape abandons the edit rather than committing a half-typed name.
+      if (ev.key === "Escape"){ input.value = lastSaved; input.blur(); }
+    };
+    nameCell.appendChild(input);
+    if (input.value !== n){
+      var idh = document.createElement("div");
+      idh.className = "idhint";
+      idh.textContent = "id: " + n;
+      idh.title = "The identifier this connector appears under in the request log";
+      nameCell.appendChild(idh);
+    }
+
+    /* ---- active toggle ----
+       Turning a connector off is reversible and destroys nothing: the secret
+       stays in the vault. That is the whole difference from Remove, so it does
+       not ask for confirmation -- it is undone by pressing it again. */
+    var swWrap = document.createElement("label");
+    swWrap.className = "sw";
+    swWrap.title = enabled ? "Turn this connector off" : "Turn this connector on";
+    var cb = document.createElement("input");
+    cb.type = "checkbox"; cb.checked = enabled;
+    cb.setAttribute("aria-label", "Active: " + n);
+    var track = document.createElement("span"); track.className = "track";
+    var knob  = document.createElement("span"); knob.className  = "knob";
+    swWrap.appendChild(cb); swWrap.appendChild(track); swWrap.appendChild(knob);
+    cb.onchange = async function(){
+      var want = cb.checked;
+      cb.disabled = true;
+      try {
+        await api("POST", "/account/provider-keys/" + encodeURIComponent(n) +
+                  "/enabled", { enabled: want });
+        msg(want ? "Turned on " + n + "."
+                 : "Turned off " + n + ". The proxy will stop routing on it. " +
+                   "The credential is kept, so you can turn it back on.", "ok");
+        await loadProviderKeys().catch(function(e){
+          msg("Saved, but the list could not refresh: " + e.message, "err"); });
+      } catch(e){
+        cb.checked = !want;          // the server refused; do not show it as done
+        msg(e.message, "err");
+      } finally {
+        // Re-enabled here, not on the success path: the rebuild used to be the
+        // only thing that restored it, so a failed refresh froze the switch
+        // until a full page reload.
+        cb.disabled = false;
+      }
+    };
+    tr.children[3].appendChild(swWrap);
+    if (enabled && !active){
+      var warn = document.createElement("div");
+      warn.className = "hint";
+      warn.textContent = "no usable credential stored";
+      tr.children[3].appendChild(warn);
+    }
+
+    /* ---- test ----
+       A key can be revoked at the vendor long after it was added, so "it worked
+       when I pasted it" is not something anyone can rely on. Read-only and
+       never billed: the vendor's non-inference check (GET /models). */
+    var test = document.createElement("button");
+    test.className = "iconbtn";
+    test.innerHTML = "&#10003;";
+    test.title = "Test this connector's credential against the vendor";
+    test.setAttribute("aria-label", "Test connector " + n);
+    test.onclick = function(){ runConnectorTest(n, test); };
+    tr.lastChild.appendChild(test);
+
+    /* ---- edit ----
+       A stored secret can never be shown back, so "edit" means replace the
+       credential: the connector loads into the form above with its vendor and
+       name fixed and the secret fields blank for re-entry. */
+    var edit = document.createElement("button");
+    edit.className = "iconbtn";
+    edit.innerHTML = "&#9998;";
+    edit.title = "Replace this connector's credential";
+    edit.setAttribute("aria-label", "Edit connector " + n);
+    edit.onclick = function(){ editProviderKey(n, k); };
+    tr.lastChild.appendChild(edit);
+
+    var del = document.createElement("button");
+    del.className = "iconbtn danger"; del.innerHTML = "&#128465;";
+    del.title = "Remove this connector and destroy its stored credential";
+    del.setAttribute("aria-label", "Remove connector " + n);
+    del.onclick = async function(){
+      // Accurate wording: the stored VALUE is destroyed, but the record is
+      // retained (deleted_at) so historical TDRs that reference it still
+      // resolve. Saying "deleted" would promise an erasure we deliberately do
+      // not perform.
+      if (!confirmDelete('Remove "' + n + '"?\n\n' +
+          'The stored credential is destroyed and we stop using it immediately. ' +
+          'Anything calling that vendor with it will stop working.\n\n' +
+          'The record itself is kept (without the secret) so past usage stays ' +
+          'auditable. It will no longer appear here.')) return;
+      try { await api("DELETE", "/account/provider-keys/" + encodeURIComponent(n));
+            msg("Removed " + n + ". Past usage remains auditable.", "ok");
+            // #7: the form may still be open on the connector just destroyed.
+            if (editingKey === n) endEditProviderKey();
+            // #4: an unhandled rejection here left the destroyed row on screen,
+            // fully interactive, next to a success toast.
+            await loadProviderKeys().catch(function(e){
+              msg("Removed, but the list could not refresh: " + e.message +
+                  ". Reload to see the current state.", "err"); }); }
+      catch(e){ msg(e.message, "err"); }
+    };
+    tr.lastChild.appendChild(del);
+    body.appendChild(tr);
+  });
+}
+
+/* Copy to clipboard, with a fallback. The clipboard API needs a secure context
+   AND a user gesture; when it is unavailable or refused, select the text so a
+   manual copy is one keystroke rather than a drag. */
+function copyText(text, okEl){
+  function done(){
+    if (!okEl) return;
+    okEl.style.display = "";
+    setTimeout(function(){ okEl.style.display = "none"; }, 2500);
+  }
+  if (navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(done, function(){ fallback(); });
+  } else { fallback(); }
+  function fallback(){
+    var ta = document.createElement("textarea");
+    ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand("copy"); done(); }
+    catch(e){ if (okEl){ okEl.textContent = "Press Cmd/Ctrl+C"; okEl.style.display = ""; } }
+    document.body.removeChild(ta);
+  }
+}
+
+/* A plain guard rather than window.confirm: a native modal blocks the page and
+   is easy to dismiss by reflex on a destructive action. */
+function confirmDelete(question){ return window.confirm(question); }
+
+function esc(s){
+  return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+  });
+}
+
+/* Whether this account's plan may create roles. The server decides (auth/me
+   carries can_manage_org, computed by the same predicate that gates the write);
+   this only renders the answer. Showing a builder that cannot save is what let
+   a full role be named, given models, and thrown away on submit. */
+var CAN_ORG = true;
+function applyOrgPlan(allowed, plan){
+  CAN_ORG = !!allowed;
+  var locked = document.getElementById("roleLocked");
+  var builder = document.getElementById("roleBuilder");
+  if (!locked || !builder) return;
+  locked.hidden = CAN_ORG;
+  builder.hidden = !CAN_ORG;
+  if (!CAN_ORG){
+    var name = plan ? (plan.charAt(0).toUpperCase() + plan.slice(1)) : "Your";
+    document.getElementById("roleLockedWhy").textContent =
+      name + " uses a fixed structure, so custom roles cannot be created on it. "
+      + "Govern and Control let you define your own roles and departments, and "
+      + "attribute spend across teams.";
+  }
+}
+
+/* ── roles ────────────────────────────────────────────────────────────── */
+/* The models chosen for the role being built, by model_id. A Set, because the
+   whole point of the two-pane picker is that a model is in exactly one list:
+   duplicates would show a model as both available and selected. */
+var PICKED = new Set();
+
+/* The role being edited, or "" when creating. It is the role_id (the SLUG),
+   never the name: an edit must land on the row it came from. Re-deriving the
+   slug from the name on save would turn every rename into a NEW role and leave
+   the old one behind, still bound to whatever keys held it. */
+var EDITING = "";
+
+function modelRow(m, inRole){
+  var row = document.createElement("div");
+  row.className = "row";
+  row.dataset.model = m.model_id;
+  var name = document.createElement("span");
+  name.textContent = m.model_id;
+  var vend = document.createElement("span");
+  vend.className = "vend";
+  vend.textContent = m.provider || "";
+  row.appendChild(name); row.appendChild(vend);
+  row.title = inRole ? "Click to remove from the role" : "Click to add to the role";
+  row.onclick = function(){
+    if (inRole) { PICKED.delete(m.model_id); } else { PICKED.add(m.model_id); }
+    renderRoleBuilder();
+  };
+  return row;
+}
+
+function renderRoleBuilder(){
+  var avail = document.getElementById("availList");
+  var picked = document.getElementById("pickedList");
+  if (!avail || !picked) return;
+  avail.innerHTML = ""; picked.innerHTML = "";
+  var byId = {};
+  (MODELS.models || []).forEach(function(m){ byId[m.model_id] = m; });
+
+  // Available keeps catalog order: it is a list you scan for something.
+  var nAvail = 0;
+  (MODELS.models || []).forEach(function(m){
+    if (PICKED.has(m.model_id)) return;
+    avail.appendChild(modelRow(m, false)); nAvail++;
+  });
+
+  // Selected is MOST RECENT FIRST. A Set keeps insertion order, so reversing it
+  // puts the model just clicked at the top -- where it is visible without
+  // scrolling once the list is long, which is the whole point of the change.
+  var order = Array.from(PICKED).reverse();
+  order.forEach(function(id){
+    picked.appendChild(modelRow(byId[id] || {model_id:id, provider:""}, true));
+  });
+
+  if (!nAvail){
+    avail.innerHTML = '<div class="empty">Every active model is in this role.</div>';
+  }
+  if (!order.length){
+    picked.innerHTML = '<div class="empty">No models yet. Click one on the left.</div>';
+  }
+  document.getElementById("availCount").textContent = nAvail;
+  document.getElementById("pickedCount").textContent = order.length;
+  checkRoleForm();
+}
+
+/* Load an existing role into the builder. */
+function editRole(r){
+  EDITING = r.role_id;
+  document.getElementById("rolename").value = r.name || r.role_id;
+  PICKED = new Set();
+  // A legacy role may grant whole VENDORS. Preload what it can actually reach
+  // today (allowed_models, resolved server-side) so editing cannot silently
+  // shrink a key's access -- and say plainly that saving converts the vendor
+  // grant into this explicit list.
+  var seed = (r.models && r.models.length) ? r.models : (r.allowed_models || []);
+  seed.forEach(function(id){ PICKED.add(id); });
+  var note = document.getElementById("editNote");
+  var lines = ['Editing "' + (r.name || r.role_id) + '". Its id stays '
+               + r.role_id + ', so keys bound to it keep working.'];
+  if ((r.providers || []).length){
+    lines.push("This role currently grants whole vendors (" + r.providers.join(", ")
+      + "). Saving replaces that with the explicit list below, so models those "
+      + "vendors add later will NOT be included.");
+  }
+  note.textContent = lines.join(" ");
+  note.hidden = false;
+  document.getElementById("roleFormTitle").textContent = "Edit role";
+  document.getElementById("saveRole").textContent = "Update role";
+  document.getElementById("cancelEdit").hidden = false;
+  renderRoleBuilder();
+  // Convenience only. Guarded because a missing scrollIntoView must never be
+  // what stops a role from being editable.
+  var nameEl = document.getElementById("rolename");
+  if (nameEl.scrollIntoView) nameEl.scrollIntoView({behavior:"smooth", block:"center"});
+}
+
+function cancelEdit(){
+  EDITING = "";
+  document.getElementById("editNote").hidden = true;
+  document.getElementById("roleFormTitle").textContent = "Create a role";
+  document.getElementById("saveRole").textContent = "Create role";
+  document.getElementById("cancelEdit").hidden = true;
+  clearRoleForm();
+}
+
+function selectAllModels(){
+  (MODELS.models || []).forEach(function(m){ PICKED.add(m.model_id); });
+  renderRoleBuilder();
+}
+
+function unselectAllModels(){
+  PICKED.clear();
+  renderRoleBuilder();
+}
+
+function checkRoleForm(){
+  var named = document.getElementById("rolename").value.trim();
+  document.getElementById("saveRole").disabled = !CAN_ORG || !(named && PICKED.size);
+}
+
+async function saveRole(){
+  var name = document.getElementById("rolename").value.trim();
+  // The picker grants an EXPLICIT list of models. It sends no vendor grant, so
+  // a model added to a vendor later is not silently swept into this role --
+  // whoever owns the role decides, not the vendor's release schedule. The
+  // server still honours `providers` for roles that already carry one.
+  var providers = [];
+  var models = Array.from(PICKED);
+  // On edit the id is FIXED. Only a new role derives its slug from the name,
+  // which is also why a rename is safe: the name is a label, the id is the
+  // identity that keys bind to and that every TDR stamps.
+  var slug = EDITING ||
+    (name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "role");
+  var editing = !!EDITING;
+  var btn = document.getElementById("saveRole");
+  btn.disabled = true;
+  try {
+    var out = await api("PUT", "/account/roles/" + encodeURIComponent(slug),
+                        {name:name, providers:providers, models:models});
+    var n = (out.allowed_models || []).length;
+    msg('Role "' + name + '" ' + (editing ? "updated" : "created") + ' — ' + n
+        + " model" + (n === 1 ? "" : "s") + ".", "ok");
+    if ((out.warnings || []).length) msg(out.warnings.join(" "), "warn");
+    if (editing) { cancelEdit(); } else { clearRoleForm(); }
+    await loadRoles();
+    await loadDepartments();
+  } catch(e){
+    // A plan refusal arrives structured (headline, reason, remedy, upgrade
+    // link). Flattening it to e.message throws the remedy away, which is the
+    // only part that tells the customer what to do next.
+    if (e.detail) { msgDetail(e.detail, "err"); } else { msg(e.message, "err"); }
+    btn.disabled = false;
+  }
+}
+
+function clearRoleForm(){
+  document.getElementById("rolename").value = "";
+  PICKED.clear();
+  renderRoleBuilder();
+}
+
+async function loadRoles(){
+  var data = await api("GET", "/account/roles");
+  ROLES = data.roles || [];
+  var body = document.querySelector("#roleTable tbody");
+  body.innerHTML = "";
+  ROLES.forEach(function(r){
+    var tr = document.createElement("tr");
+    var grants = r.grants_all_active
+      ? '<span class="pill builtin">every active model</span>'
+      : esc((r.providers || []).join(", ") +
+            ((r.models || []).length ? " + " + r.models.length + " model(s)" : "")) || "—";
+    tr.innerHTML = "<td>" + esc(r.name) +
+      (r.builtin ? ' <span class="pill builtin">built in</span>' : "") +
+      "</td><td>" + grants + "</td><td>" + (r.allowed_models || []).length + "</td><td></td>";
+    if (!r.builtin){
+      var ed = document.createElement("button");
+      ed.className = "ghost"; ed.textContent = "Edit";
+      ed.style.marginRight = "6px";
+      ed.onclick = function(){ editRole(r); };
+      tr.lastChild.appendChild(ed);
+      var del = document.createElement("button");
+      del.className = "danger"; del.textContent = "Delete";
+      del.onclick = function(){ deleteRole(r); };
+      tr.lastChild.appendChild(del);
+    }
+    body.appendChild(tr);
+  });
+
+  var sel = document.getElementById("krole");
+  sel.innerHTML = "";
+  ROLES.forEach(function(r){
+    var o = document.createElement("option");
+    o.value = r.role_id;
+    o.textContent = r.name + " (" + (r.allowed_models || []).length + " models)";
+    sel.appendChild(o);
+  });
+}
+
+/* Deleting a role is a SOFT delete: the definition is retained so every key
+   binding and TDR that references it still resolves, and it simply stops being
+   shown. Keys currently using it are refused first (409) rather than broken
+   silently -- the operator then chooses explicitly. */
+async function deleteRole(r){
+  if (!confirmDelete('Delete the role "' + r.name + '"?\n\n' +
+      'It will no longer appear here or in the role picker.\n\n' +
+      'The definition is kept so past usage stays auditable — TDRs recorded ' +
+      'under this role can still be explained.')) return;
+
+  var path = "/account/roles/" + encodeURIComponent(r.role_id);
+  try {
+    await api("DELETE", path);
+    msg('Deleted "' + r.name + '". Past usage remains auditable.', "ok");
+    return loadRoles();
+  } catch(e){
+    // 409: keys are CURRENTLY bound to it. They would fail closed on their
+    // next call, so make that the operator's explicit decision.
+    if (!/currently use this role/i.test(e.message)) { msg(e.message, "err"); return; }
+    if (!confirmDelete(e.message.replace(/, or repeat.*$/i, "") + "\n\n" +
+        "Re-binding them first is the safe order.\n\n" +
+        "Delete anyway? Those keys will be refused on their next call until " +
+        "they are re-bound.")) return;
+    try {
+      var out = await api("DELETE", path + "?force=true");
+      var n = (out.keys_affected || []).length;
+      msg('Deleted "' + r.name + '". ' + n + " key" + (n === 1 ? "" : "s") +
+          " must be re-bound before they will work again.", "warn");
+      loadRoles();
+      loadKeys();
+    } catch(e2){ msg(e2.message, "err"); }
+  }
+}
+
+/* ── proxy keys ───────────────────────────────────────────────────────── */
+async function loadKeys(){
+  var data = await api("GET", "/account/keys");
+  var rows = data.keys || data || [];
+  if (!Array.isArray(rows)) rows = [];
+  var body = document.querySelector("#keyTable tbody");
+  body.innerHTML = "";
+  document.getElementById("keyEmpty").style.display = rows.length ? "none" : "";
+  rows.forEach(function(k){
+    var tr = document.createElement("tr");
+    tr.innerHTML = "<td>" + esc(k.label || "") + "</td><td><code>" +
+      esc(k.key_prefix || k.key || "") + "…</code></td><td>" +
+      esc(k.role_name || k.role_id || "—") + "</td><td></td>";
+    // ROTATE: swap the secret, keep the identity. Placed before Revoke because
+    // it is the safer of the two and the one wanted far more often -- a revoke
+    // is terminal, a rotation keeps the person working.
+    var rot = document.createElement("button");
+    rot.className = "ghost"; rot.textContent = "Rotate key";
+    rot.title = "Issue a new secret for this key and email a collection link";
+    rot.style.marginRight = "6px";
+    rot.onclick = async function(){
+      // Confirmed, unlike the connector toggle: this one is NOT reversible.
+      // The old secret stops working the moment it returns, and the wording
+      // says so rather than implying a grace period.
+      var who = k.label && k.label.indexOf("@") > -1 ? k.label : "";
+      if (!confirmDelete(
+          "Rotate this key?\n\n" +
+          "The current secret stops working immediately. A replacement is " +
+          "emailed" + (who ? " to " + who : "") + " as a one-time collection " +
+          "link, and it keeps this key's role and department.\n\n" +
+          "Anything still using the old secret will start failing until it is " +
+          "updated.")) return;
+      rot.disabled = true;
+      try {
+        var r = await api("POST", "/account/keys/" +
+                          encodeURIComponent(k.key_id) + "/rotate", {});
+        // A key that is not named for an address comes back with the secret
+        // ONCE, because there is nowhere to email it.
+        if (r && r.key){
+          msg("Rotated. This replacement is shown once: " + r.key, "ok");
+        } else if (r && r.queued === false){
+          msg("Rotated, but the email was NOT queued. The old key is already " +
+              "dead. " + (r.warning || "Rotate again to issue a fresh link."),
+              "err");
+        } else {
+          msg("Rotated. A collection link is on its way" +
+              (r && r.assigned_to ? " to " + r.assigned_to : "") +
+              ". The old key is now dead.", "ok");
+        }
+        if (r && r.role_warning) msg(r.role_warning, "err");
+        await loadKeys().catch(function(e){
+          msg("Rotated, but the list could not refresh: " + e.message, "err"); });
+      } catch(e){ msg(e.message, "err"); }
+      finally { rot.disabled = false; }
+    };
+    tr.lastChild.appendChild(rot);
+
+    var del = document.createElement("button");
+    del.className = "danger"; del.textContent = "Revoke";
+    del.onclick = async function(){
+      if (!confirmDelete("Revoke this key?\n\n" +
+          "Anything using it stops immediately and it cannot be un-revoked.\n\n" +
+          "Its role history is kept so past usage stays auditable.")) return;
+      try { await api("DELETE", "/account/keys/" + encodeURIComponent(k.key_id));
+            msg("Revoked.", "ok"); loadKeys(); }
+      catch(e){ msg(e.message, "err"); }
+    };
+    tr.lastChild.appendChild(del);
+    body.appendChild(tr);
+  });
+}
+
+async function mintKey(){
+  var btn = document.getElementById("mintKey");
+  btn.disabled = true;
+  try {
+    var assign = document.getElementById("kassign").value.trim();
+    var out = await api("POST", "/account/keys", {
+      role_id: document.getElementById("krole").value,
+      department: document.getElementById("kdept").value,
+      assign_email: assign
+    });
+    var box = document.getElementById("mintOut");
+    box.innerHTML = "";
+
+    if (out.key){
+      // Not assigned: this is the only time it can be shown.
+      var d = document.createElement("div");
+      d.className = "keyout";
+      d.innerHTML = "<div style='color:#8b949e;font-size:12px;margin-bottom:6px'>" +
+        "Copy this now — it is shown once and cannot be retrieved later.</div>" +
+        "<code id='mintedKey'>" + esc(out.key) + "</code>" +
+        "<div class='row'><button id='copyMinted' type='button'>Copy key</button>" +
+        "<span id='copiedMinted' style='color:#7ee787;display:none'>Copied</span></div>";
+      box.appendChild(d);
+      // Read the key back out of the DOM rather than closing over it, so the
+      // plaintext is not held in a long-lived JS variable.
+      document.getElementById("copyMinted").onclick = function(){
+        copyText(document.getElementById("mintedKey").textContent,
+                 document.getElementById("copiedMinted"));
+      };
+      msg("Key minted.", "ok");
+    } else if (out.assigned_to){
+      // Assigned: deliberately NOT shown here. Say plainly what happened, and
+      // say plainly when the email did not go — the key exists either way, and
+      // implying it was sent would leave a live credential unclaimed.
+      var d2 = document.createElement("div");
+      d2.className = "keyout";
+      d2.style.borderColor = out.queued ? "" : "#d29922";
+      d2.innerHTML = out.queued
+        ? "<div style='color:#8b949e;font-size:12px'>Key created. A one-time "
+          + "collection link is on its way to <strong>" + esc(out.assigned_to)
+          + "</strong>. You will not see the key — it is theirs.</div>"
+        : "<div style='color:#e3b341;font-size:12px'>The key was created, but the "
+          + "email to <strong>" + esc(out.assigned_to) + "</strong> could NOT be "
+          + "sent. Revoke it below and try again.</div>";
+      box.appendChild(d2);
+      msg(out.queued ? "Key created — sending to " + out.assigned_to + "."
+                        : "Key created but the handover could not be set up.",
+          out.queued ? "ok" : "warn");
+    }
+
+    if (out.role_warning) msg(out.role_warning, "warn");
+    document.getElementById("kassign").value = "";
+    loadKeys();
+  } catch(e){ e.detail ? msgDetail(e.detail, "err") : msg(e.message, "err"); }
+  btn.disabled = false;
+}
+
+/* ── bootstrap ────────────────────────────────────────────────────────── */
+var bootstrapLoaded = false;
+async function loadBootstrap(){
+  if (bootstrapLoaded) return;
+  var box = document.getElementById("bootstrapText");
+  try {
+    var r = await fetch("/api/bootstrap", {credentials:"same-origin"});
+    var body = await r.text();
+    // A non-2xx body is an error payload, not the brief. Writing it into the
+    // textarea put a JSON error where the instructions should be, or left the
+    // box blank -- either of which reads as "there is no bootstrap".
+    if (!r.ok){
+      if (r.status === 401){ location.href = "/"; return; }
+      box.value = "";
+      msg("Could not load the bootstrap text (" + r.status + "). Reload the page "
+          + "and try again; if it persists the console API is not reachable.", "err");
+      return;                      // NOT latched: the next click retries.
+    }
+    box.value = body;
+    bootstrapLoaded = true;
+  } catch(e){
+    box.value = "";
+    msg("Could not load the bootstrap text: " + (e.message || e), "err");
+  }
+}
+document.getElementById("copyMcp").onclick = function(){
+  copyText(document.getElementById("mcpUrl").textContent.trim(), null);
+  msg("MCP URL copied.", "ok");
+};
+document.getElementById("copyCc").onclick = function(){
+  copyText(document.getElementById("ccCmd").value, null);
+  msg("Command copied. Put your own key in place of cpk_YOUR_KEY.", "ok");
+};
+document.getElementById("copyBootstrap").onclick = function(){
+  copyText(document.getElementById("bootstrapText").value, null);
+  msg("Copied.", "ok");
+};
+document.getElementById("bootstrapLink").onclick = function(e){
+  e.preventDefault();
+  document.querySelector('.tab[data-tab="bootstrap"]').click();
+};
+
+/* ── wiring ───────────────────────────────────────────────────────────── */
+// Starting a new entry retires the previous save's panel (see hidePostSaveTest).
+document.getElementById("vendor").onchange = function(){
+  hidePostSaveTest(); renderFields(); };
+document.getElementById("keyname").oninput = function(){
+  hidePostSaveTest(); checkKeyForm(); };
+document.getElementById("saveKey").onclick = saveProviderKey;
+document.getElementById("clearKey").onclick = clearKeyForm;
+document.getElementById("rolename").oninput = checkRoleForm;
+document.getElementById("saveRole").onclick = saveRole;
+document.getElementById("clearRole").onclick = clearRoleForm;
+document.getElementById("selectAll").onclick = selectAllModels;
+document.getElementById("unselectAll").onclick = unselectAllModels;
+document.getElementById("cancelEdit").onclick = cancelEdit;
+document.getElementById("mintKey").onclick = mintKey;
+document.getElementById("krole").onchange = checkMintForm;
+document.getElementById("kdept").onchange = checkMintForm;
+
+/* Both are REQUIRED (Chairman, 2026-09-13): role and department are
+   characteristics of the minted key, and the TDR takes its values from the key.
+   A key minted without them writes TDRs that cannot be attributed, or that are
+   refused outright by an account policy requiring a department. There is no
+   blank option -- an empty choice would simply defer the problem to the first
+   request. */
+function checkMintForm(){
+  var r = document.getElementById("krole").value;
+  var d = document.getElementById("kdept").value;
+  document.getElementById("mintKey").disabled = !(r && d);
+}
+
+async function loadDepartments(){
+  var sel = document.getElementById("kdept");
+  try {
+    var data = await api("GET", "/org/departments");
+    var rows = (data.rows || []).filter(function(x){ return x.status !== "retired"; });
+    sel.innerHTML = "";
+    if (!rows.length){
+      var o = document.createElement("option");
+      o.value = ""; o.textContent = "No departments yet — create one first";
+      sel.appendChild(o);
+    } else {
+      rows.forEach(function(d){
+        var o = document.createElement("option");
+        o.value = d.slug; o.textContent = (d.name || d.slug) + "  (" + d.slug + ")";
+        sel.appendChild(o);
+      });
+    }
+  } catch(e){
+    sel.innerHTML = "";
+    var o = document.createElement("option");
+    o.value = ""; o.textContent = "Could not load departments";
+    sel.appendChild(o);
+  }
+  checkMintForm();
+}
+
+(async function init(){
+  try {
+    var me = await api("GET", "/auth/me");
+    document.getElementById("acct").textContent = me.email || me.account_name || "signed in";
+    // Absence means permissive, matching the server: a plan with no tier entry
+    // is unrestricted, so an older hub that does not send the field must not
+    // lock a customer out of something they are entitled to.
+    applyOrgPlan(me.can_manage_org !== false, me.account_plan || "");
+
+    var v = await api("GET", "/account/vendors");
+    var sel = document.getElementById("vendor");
+    (v.vendors || []).forEach(function(spec){
+      VENDORS[spec.provider] = spec;
+      var o = document.createElement("option");
+      o.value = spec.provider;
+      o.textContent = spec.label;
+      sel.appendChild(o);
+    });
+
+    MODELS = await api("GET", "/account/models");
+    renderRoleBuilder();
+    await loadRoles();
+    await loadDepartments();
+    await loadProviderKeys();
+    await loadKeys();
+  } catch(e){
+    msg(e.message, "err");
+  }
+})();
+</script>
+</body>
+</html>

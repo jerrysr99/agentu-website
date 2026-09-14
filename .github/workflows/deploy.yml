@@ -1,0 +1,36 @@
+name: Deploy to Caddy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install SSH key
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          echo "52.21.140.15 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBlqy3bAASKo7lciIC49I+INrf2dqdcIVTiX+0JeiDaF" >> ~/.ssh/known_hosts
+          echo "Host aiproxy-saas" >> ~/.ssh/config
+          echo "  HostName 52.21.140.15" >> ~/.ssh/config
+          echo "  User ubuntu" >> ~/.ssh/config
+          echo "  IdentityFile ~/.ssh/deploy_key" >> ~/.ssh/config
+          echo "  IdentitiesOnly yes" >> ~/.ssh/config
+          chmod 600 ~/.ssh/config ~/.ssh/known_hosts
+
+      - name: Rsync to /var/www/agentu
+        env:
+          DEPLOY_SSH_KEY: /home/runner/.ssh/deploy_key
+          REMOTE_HOST: ubuntu@52.21.140.15
+          SSH_OPTS: -o BatchMode=yes -o IdentitiesOnly=yes
+        run: bash scripts/deploy-saas.sh
