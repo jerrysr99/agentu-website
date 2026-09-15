@@ -1205,17 +1205,70 @@ async function hydrateKeys(){
    <td>${k.active!==false?'<span class="badge ok">active</span>':'<span class="badge dim">revoked</span>'}</td>
    <td>${k.active!==false?`<button class="btn sm ghost" onclick="revokeKey('${esc(k.key_id)}')">Revoke</button>`:''}</td></tr>`).join('');
 }
+// A key carries its department and role as KEY-BOUND facts -- the TDR reads
+// them off the key, so a key minted without them writes unattributed spend and
+// the gateway now refuses it outright (department_required). A single-field
+// prompt could not ask for them, so it minted keys that could not be used.
+async function issueKeyOptions(){
+  if(DASH.options.departments.length && DASH.options.roles.length) return;
+  const [roles, org] = await Promise.all([api('/account/roles'), api('/org/overview')]);
+  if(roles.ok && roles.data)
+    DASH.options.roles = (roles.data.roles||[]).map(r => [r.role_id, r.name || r.role_id]);
+  if(org.ok && org.data)
+    DASH.options.departments = (org.data.departments||[]).map(d => [d.slug, d.name || d.slug]);
+}
+function issueKeyCheck(){
+  const g = id => (document.getElementById(id)||{}).value || '';
+  const ok = g('nk-name').trim() && g('nk-role') && g('nk-dept') &&
+             /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(g('nk-email').trim());
+  const b = document.getElementById('nk-go');
+  if(b) b.disabled = !ok;
+}
 async function issueKey(){
-  const label=prompt('Label for the new key (e.g. Production, billing-service):','');
-  if(label===null)return;
-  const r=await api('/account/keys',{method:'POST',body:{label:label||'key'}});
-  if(!r.ok){toast(r.data.error||'Could not create key');return}
+  const slot=$('#key-new');
+  if(!slot) return;
+  slot.innerHTML='<div class="card" style="margin-bottom:14px"><div class="cbody muted">Loading…</div></div>';
+  await issueKeyOptions();
+  const opts = a => a.map(([v,n])=>`<option value="${esc(v)}">${esc(n)}</option>`).join('');
+  slot.innerHTML=`<div class="card" style="border-color:#CDBA7A;margin-bottom:14px"><div class="cbody">
+    <div class="kicker" style="color:var(--gold)">New key</div>
+    <div class="field" style="margin-top:8px"><label class="hint">Name <span style="color:#e3b341">required</span></label>
+      <input class="input" id="nk-name" placeholder="Meta Muse" maxlength="80" oninput="issueKeyCheck()"></div>
+    <div class="hint">What this key is FOR &mdash; the platform or agent that sends it. Give each platform its own.</div>
+    <div class="field" style="margin-top:8px"><label class="hint">Role <span style="color:#e3b341">required</span></label>
+      <select class="input" id="nk-role" onchange="issueKeyCheck()"><option value="">Choose a role…</option>${opts(DASH.options.roles)}</select></div>
+    <div class="field" style="margin-top:8px"><label class="hint">Department <span style="color:#e3b341">required</span></label>
+      <select class="input" id="nk-dept" onchange="issueKeyCheck()"><option value="">Choose a department…</option>${opts(DASH.options.departments)}</select></div>
+    <div class="hint">Every TDR this key writes is attributed here. It is a property of the KEY, not the person.</div>
+    <div class="field" style="margin-top:8px"><label class="hint">Notification email <span style="color:#e3b341">required</span></label>
+      <input class="input" id="nk-email" type="email" placeholder="you@example.com" oninput="issueKeyCheck()"></div>
+    <div class="hint">Where the one-time collection link is sent. The key is not shown here.</div>
+    <div class="row" style="margin-top:10px">
+      <button class="btn" id="nk-go" disabled onclick="issueKeySubmit()">Create key</button>
+      <button class="btn ghost" onclick="document.getElementById('key-new').innerHTML=''">Cancel</button></div>
+  </div></div>`;
+  issueKeyCheck();
+}
+async function issueKeySubmit(){
+  const g = id => (document.getElementById(id)||{}).value || '';
+  const btn=document.getElementById('nk-go'); if(btn) btn.disabled=true;
+  const email=g('nk-email').trim();
+  const r=await api('/account/keys',{method:'POST',body:{
+    label:g('nk-name').trim(), role_id:g('nk-role'), department:g('nk-dept'),
+    notify_email:email, assign_email:email }});
+  if(!r.ok){toast((r.data&&r.data.error)||'Could not create key'); issueKeyCheck(); return}
   const full=r.data.key||'';
   const slot=$('#key-new');
-  if(slot&&full){slot.innerHTML=`<div class="card" style="border-color:#CDBA7A;margin-bottom:14px"><div class="cbody">
-    <div class="kicker" style="color:var(--gold)">New key — shown once</div>
-    <div class="field" style="margin-top:8px"><input class="input mono" readonly value="${esc(full)}" onclick="this.select();navigator.clipboard&&navigator.clipboard.writeText('${esc(full)}');toast('Copied')"></div>
-    <div class="hint">Copy this now. For security it can't be retrieved again.</div></div></div>`;}
+  if(slot){
+    slot.innerHTML = full
+      ? `<div class="card" style="border-color:#CDBA7A;margin-bottom:14px"><div class="cbody">
+          <div class="kicker" style="color:var(--gold)">New key — shown once</div>
+          <div class="field" style="margin-top:8px"><input class="input mono" readonly value="${esc(full)}" onclick="this.select();navigator.clipboard&&navigator.clipboard.writeText('${esc(full)}');toast('Copied')"></div>
+          <div class="hint">Copy this now. For security it can't be retrieved again.</div></div></div>`
+      : `<div class="card" style="border-color:#CDBA7A;margin-bottom:14px"><div class="cbody">
+          <div class="kicker" style="color:var(--gold)">Key created</div>
+          <div class="hint" style="margin-top:6px">A one-time collection link is on its way to <strong>${esc(email)}</strong>. The key is not shown here.</div></div></div>`;
+  }
   toast('Key created');
   hydrateKeys();
 }
