@@ -1520,9 +1520,9 @@ async function loadDepartments(){
     var rows = (data.rows || []).filter(function(x){ return x.status !== "retired"; });
     sel.innerHTML = "";
     if (!rows.length){
-      var o = document.createElement("option");
-      o.value = ""; o.textContent = "No departments yet — create one first";
-      sel.appendChild(o);
+      deptToText("No departments returned. Type the slug, e.g. tradeview or admin.");
+      checkMintForm();
+      return;
     } else {
       rows.forEach(function(d){
         var o = document.createElement("option");
@@ -1531,12 +1531,25 @@ async function loadDepartments(){
       });
     }
   } catch(e){
-    sel.innerHTML = "";
-    var o = document.createElement("option");
-    o.value = ""; o.textContent = "Could not load departments";
-    sel.appendChild(o);
+    // No /org/departments endpoint exists yet (agentu-api has no /org routes),
+    // so this 404s and an empty REQUIRED select makes the form unsubmittable.
+    // Swap the select for a free-text slug box rather than block the mint:
+    // department is a key-bound string the hub slugs on write.
+    deptToText("The department list could not be loaded. Type the slug, e.g. tradeview or admin.");
   }
   checkMintForm();
+}
+
+function deptToText(why){
+  var sel = document.getElementById("kdept");
+  if (!sel || sel.tagName === "INPUT") return;
+  var inp = document.createElement("input");
+  inp.id = "kdept"; inp.type = "text"; inp.placeholder = "tradeview";
+  inp.setAttribute("autocomplete", "off");
+  inp.oninput = checkMintForm;
+  sel.parentNode.replaceChild(inp, sel);
+  var hint = inp.nextElementSibling;
+  if (hint && hint.className === "hint") hint.innerHTML = "<strong>" + why + "</strong>";
 }
 
 (async function init(){
