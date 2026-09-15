@@ -104,6 +104,10 @@ textarea.input{resize:vertical;min-height:74px;font-family:var(--mono);font-size
 .dmetrics .dtotlab{font-size:11px;color:var(--faint)}
 .dplot{flex:1;display:flex;gap:3px;align-items:flex-end;height:190px;min-width:0}
 .dbar{flex:1;border-radius:2px 2px 0 0;min-width:2px}
+/* The analytics headline. Deliberately NOT .hero — that is the marketing page's
+   full-bleed navy band, and reusing it inside a console card inherits a grid
+   and 72px of padding. */
+.anhero{border-color:var(--good);box-shadow:0 0 0 3px rgba(46,160,67,.10)}
 @media(max-width:720px){.dchart{flex-direction:column}.dmetrics{flex-direction:row;flex-wrap:wrap;align-items:baseline}}
 .stat{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;box-shadow:var(--sh)}
 .stat .l{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--faint)}
@@ -1084,6 +1088,7 @@ function hydrateLive(r){
   loadConnectorCount();
   if(r==='#/app'){loadDashCounts();loadDashSeries();}
   else if(r==='#/app/requests')loadRequests();
+  else if(r==='#/app/analytics')loadAnalytics();
   else if(r==='#/app/usage')loadUsage(30,false);
   else if(r==='#/app/keys')hydrateKeys();
   else if(r==='#/app/providers')loadProviders(true);
@@ -1338,7 +1343,7 @@ const NAV=[
  ['OVERVIEW',[['#/app','◧','Dashboard'],['#/app/usage','▤','Usage']]],
  ['MANAGE',[['#/app/keys','⚿','API keys'],['/keys.html','⚷','Connectors','LIVE'],['/keys.html#connect','⇲','Connect an app','LIVE'],['/keys.html#bootstrap','⌘','Agent bootstrap','LIVE']]],
  ['ORGANIZATION',[['/keys.html#roles','◉','Roles','LIVE'],['#/app/org','⬡','Departments','LIVE']]],
- ['SPEND',[['#/app/limits','◔','Limits','SAMPLE'],['#/app/analytics','◫','Analytics','SAMPLE']]],
+ ['SPEND',[['#/app/limits','◔','Limits','SAMPLE'],['#/app/analytics','◫','Analytics','LIVE']]],
  ['LEDGER',[['#/app/requests','≣','Request log','LIVE'],['#/app/reconciliation','⇄','Reconciliation','SAMPLE']]],
  ['CATALOG',[['#/app/providers','▦','Providers','SAMPLE'],['#/app/routing','⚖','Smart routing','SAMPLE'],['#/app/ratecards','Σ','Rate cards','SAMPLE'],['#/app/advisory','✦','Advisory']]],
  ['ACCOUNT',[['#/app/clients','⌥','Clients & policy','SAMPLE'],['#/app/team','◉','Team & roles','SAMPLE'],['#/app/billing','▣','Plan & billing','SAMPLE'],['#/app/audit','✎','Audit log','SAMPLE'],['#/app/settings','⚙','Settings','SAMPLE']]]];
@@ -1984,15 +1989,149 @@ function pageUsage(){
    <div class="card" style="margin-top:14px"><div class="chead"><h3>By app — top 8 ${live?'<span class="illus">Illustrative</span>':''}</h3><span class="muted" style="font-size:12px">of 41 attributed apps</span></div><div class="cbody">
     ${[['synthesizer · billing-service',11.73,57],['research-agent gateway',3.31,16.1],['sentiment-agent',1.15,5.6],['fundamental-agent',0.98,4.8],['Assistant',0.92,4.5],['expectations-agent',0.77,3.7],['macro-agent',0.55,2.7],['LegalResearcher',0.51,2.5]].map(p=>`<div class="bar"><span class="bl" style="width:210px">${p[0]}</span><span class="bt"><i style="width:${p[2]}%"></i></span><span class="bv">${money(p[1])}</span></div>`).join('')}</div></div>`);
 }
+/* ─────────────────────────  ANALYTICS  ─────────────────────────
+   Every figure here is this account's own rated spend, read from the TDR
+   ledger. The slices are chosen for what a Proxy of Record uniquely knows:
+   anyone can draw a spend line, but only the record sitting in front of every
+   call can say which DEPARTMENT spent it, on which KEY, under which model —
+   and say it from its own ledger rather than from a vendor's invoice.
+
+   The old page drew from DAILY and SUM, seeded constants, with an invented
+   "11,792 requests" hardcoded into the summary. */
+
+const AN = {days:30, data:null, loading:false, loaded:false, error:''};
+
+function anSetDays(d){ AN.days=d; AN.loaded=false; AN.data=null; render(); loadAnalytics(true); }
+
+async function loadAnalytics(force){
+  if(!S.authed || S.demo) return;
+  if(AN.loading) return;
+  if(AN.loaded && !force) return;
+  AN.loading=true; AN.loaded=true;
+  const r=await api('/account/analytics?days='+AN.days);
+  AN.loading=false;
+  if(!r.ok || !r.data){ AN.error=(r.data&&r.data.error)||('HTTP '+r.status); AN.data=null; render(); return; }
+  AN.error=''; AN.data=r.data; render();
+}
+
+/* A horizontal bar row. Shares the .bar/.bt/.bv classes the rest of the console
+   already uses, so this looks like the product rather than like a new page. */
+function anBars(rows, total, fmtVal){
+  if(!rows || !rows.length) return '<div class="muted" style="font-size:13px">Nothing in this window.</div>';
+  const max = Math.max(...rows.map(r=>r.cost_usd), 0.0000001);
+  return rows.map(r=>{
+    const pct = Math.max(1, r.cost_usd/max*100);
+    const unattributed = /^unattributed$/i.test(r.name);
+    return `<div class="bar" title="${esc(r.name)} · ${r.requests.toLocaleString()} requests">
+      <span class="bl" style="${unattributed?'color:var(--warn)':''}">${esc(r.name)}</span>
+      <span class="bt"><i style="width:${pct}%;${unattributed?'background:var(--warn)':''}"></i></span>
+      <span class="bv">${fmtVal(r)}</span></div>`;
+  }).join('');
+}
+
 function pageAnalytics(){
-  const rows=DAILY.slice(-14).reverse().map(d=>`<tr><td class="mono" style="font-size:11.5px">${d.d}</td><td class="num mono">${money(d.cost)}</td><td class="num mono">${fmt(d.tin)}</td><td class="num mono">${fmt(d.tout)}</td><td class="num mono">${d.req}</td><td class="num mono ${d.err>10?'bad':''}">${d.err}</td></tr>`).join('');
-  return appShell('Analytics — trends & cost accounting','Financial deep-dive with exportable, attributable cost reporting by token unit type.',
-  `<div class="card"><div class="chead"><h3>Daily trend — last 14 days</h3></div>
-   <div class="tblwrap"><table class="tbl"><thead><tr><th>Date</th><th class="num">Cost</th><th class="num">In tokens</th><th class="num">Out tokens</th><th class="num">Requests</th><th class="num">Errors</th></tr></thead><tbody>${rows}</tbody></table></div></div>
+  const d=AN.data, t=(d&&d.totals)||null;
+  const pick=(n)=>`<button class="btn sm ${AN.days===n?'':'ghost'}" onclick="anSetDays(${n})">${n}d</button>`;
+
+  if(AN.error) return appShell('Analytics','Rated spend from your TDR ledger.',
+    `<div class="card"><div class="cbody muted" style="font-size:13px">Could not load analytics
+      (${esc(AN.error)}). Nothing is shown rather than figures that are not yours —
+      <button class="btn sm ghost" onclick="loadAnalytics(true)">retry</button></div></div>`);
+  if(!d) return appShell('Analytics','Rated spend from your TDR ledger.',
+    `<div class="card"><div class="cbody muted" style="font-size:13px">Loading…</div></div>`);
+
+  // The trend, drawn from the same series the dashboard uses.
+  const peak=Math.max(...d.series.map(r=>r.cost_usd), 0);
+  const bars=d.series.length
+    ? d.series.map(r=>`<div class="dbar" title="${esc(r.date)} · ${money(r.cost_usd)} · ${r.requests} req${r.errors?' · '+r.errors+' refused':''}"
+         style="height:${peak>0?Math.max(r.cost_usd>0?4:1, r.cost_usd/peak*100):1}%;background:${r.errors>0?'var(--warn)':'var(--indigo)'}"></div>`).join('')
+    : '<div class="muted" style="align-self:center;width:100%;text-align:center;font-size:13px">No requests in this window.</div>';
+
+  const unattributed=(d.by_department||[]).find(r=>/^unattributed$/i.test(r.name));
+  const unattributedPct = unattributed && t.cost_usd ? (unattributed.cost_usd/t.cost_usd*100) : 0;
+
+  return appShell('Analytics','Rated spend from your own TDR ledger — by department, model and key.', `
+   <div class="statgrid">
+    <div class="stat"><div class="l">Rated spend</div><div class="v">${money(t.cost_usd)}</div><div class="d muted">as billed, not estimated</div></div>
+    <div class="stat"><div class="l">Requests</div><div class="v">${t.requests.toLocaleString()}</div><div class="d muted">${money(t.avg_cost_usd,5)} average</div></div>
+    <div class="stat"><div class="l">Tokens in / out</div><div class="v" style="font-size:19px">${fmt(t.input_tokens)} / ${fmt(t.output_tokens)}</div><div class="d muted">every bucket rated</div></div>
+    <div class="stat"><div class="l">Refused</div><div class="v">${t.refused.toLocaleString()}</div><div class="d ${t.refused?'warn':'muted'}">policy held, nothing spent</div></div>
+   </div>
+
+   ${d.counterfactual ? `
+   <div class="card anhero" style="margin-top:14px">
+    <div class="cbody" style="display:flex;gap:26px;align-items:center;flex-wrap:wrap">
+     <div style="flex:1 1 320px">
+      <div style="font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--faint)">What the routing was worth</div>
+      <div style="font-family:var(--mono);font-size:38px;font-weight:600;line-height:1.1;margin:6px 0 2px;color:var(--good)">${money(d.counterfactual.avoided_usd)}</div>
+      <div style="font-size:13.5px;color:var(--slate)">not spent, on the same ${fmt(t.input_tokens + t.output_tokens)} tokens</div>
+     </div>
+     <div style="flex:1 1 300px">
+      <div class="bar"><span class="bl">All on ${esc(d.counterfactual.model)}</span>
+        <span class="bt"><i style="width:100%;background:var(--slate)"></i></span>
+        <span class="bv">${money(d.counterfactual.would_have_cost_usd)}</span></div>
+      <div class="bar"><span class="bl">What you paid</span>
+        <span class="bt"><i style="width:${Math.max(2,(d.counterfactual.paid_usd/d.counterfactual.would_have_cost_usd*100))}%;background:var(--good)"></i></span>
+        <span class="bv">${money(d.counterfactual.paid_usd)}</span></div>
+      <div class="muted" style="font-size:11.5px;margin-top:8px">
+        A counterfactual, priced from the same published tariff that rated the real
+        calls. It does not claim the work would have been done on that model &mdash;
+        it answers what the routing is worth, using the two things only the proxy
+        holds: every call's real token counts, and the rate in force when it ran.
+        <strong>${d.counterfactual.avoided_pct}% below the ceiling.</strong></div>
+     </div>
+    </div>
+   </div>` : ''}
+
    <div class="grid" style="grid-template-columns:1fr 1fr;margin-top:14px">
-    <div class="card"><div class="chead"><h3>Summary — 30 days</h3></div><div class="cbody"><div class="kv">${[['Requests','11,792'],['Total cost',money(SUM.cost)],['Avg / request',money(SUM.cost/11792,5)],['Avg output/req','173 tok']].map(x=>`<div class="cell"><div class="k">${x[0]}</div><div class="v">${x[1]}</div></div>`).join('')}</div></div></div>
-    <div class="card"><div class="chead"><h3>By account</h3></div><div class="cbody">${[['ai-proxy (root)',19.53,94],['unattributed',1.09,6]].map(p=>`<div class="bar"><span class="bl">${p[0]}</span><span class="bt"><i style="width:${p[2]}%"></i></span><span class="bv">${money(p[1])}</span></div>`).join('')}<p class="muted" style="font-size:12px;margin-top:8px">Unattributed spend means a request arrived on the root key without an app tag — tighten with per-node <a href="#/app/keys">governed keys</a>.</p></div></div>
-   </div>`);
+    <div class="card"><div class="cbody">
+      <div style="font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--faint)">Effective blended rate</div>
+      <div style="font-family:var(--mono);font-size:26px;font-weight:600;margin-top:4px">$${d.blended_per_1m_usd}<span style="font-size:13px;color:var(--faint)"> / 1M tokens</span></div>
+      <div class="muted" style="font-size:12px;margin-top:4px">Across every vendor and model. The one number that stays comparable when the traffic mix changes underneath.</div>
+    </div></div>
+    <div class="card"><div class="cbody">
+      <div style="font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--faint)">Spend concentration</div>
+      <div style="font-family:var(--mono);font-size:26px;font-weight:600;margin-top:4px">${d.concentration.top_key_pct}%<span style="font-size:13px;color:var(--faint)"> on one key</span></div>
+      <div class="muted" style="font-size:12px;margin-top:4px">
+        <span class="mono">${esc(d.concentration.top_key)}</span> accounts for
+        ${money(d.concentration.top_key_usd)} of ${money(t.cost_usd)}, across
+        ${d.concentration.key_count} active keys. A key is the unit you can revoke.</div>
+    </div></div>
+   </div>
+
+   <div class="card" style="margin-top:14px">
+    <div class="chead"><h3>Daily spend</h3>
+      <span style="margin-left:auto;display:flex;gap:6px">${pick(7)}${pick(30)}${pick(90)}</span></div>
+    <div class="cbody"><div class="dplot" style="height:150px">${bars}</div>
+      <div class="muted" style="font-size:11.5px;margin-top:6px">Amber bars carry refusals — calls the perimeter stopped before any provider was billed.</div></div>
+   </div>
+
+   <div class="grid" style="grid-template-columns:1fr 1fr;margin-top:14px">
+    <div class="card"><div class="chead"><h3>Spend by department</h3></div>
+     <div class="cbody">${anBars(d.by_department, t.cost_usd, r=>money(r.cost_usd))}
+      ${unattributed ? `<p class="muted" style="font-size:12px;margin-top:10px">
+        <strong style="color:var(--warn)">${unattributedPct.toFixed(0)}% of spend carries no department.</strong>
+        That is spend you cannot explain to a budget owner. Bind a department to each
+        key under <a href="/keys.html#keys">Proxy keys</a> and it resolves from the
+        next request onward.</p>` : ''}</div></div>
+
+    <div class="card"><div class="chead"><h3>Spend by key</h3></div>
+     <div class="cbody">${anBars(d.by_key, t.cost_usd, r=>money(r.cost_usd))}
+      <p class="muted" style="font-size:12px;margin-top:10px">Which credential spent it.
+       A key is the unit you can revoke, so this is the list you act on.</p></div></div>
+   </div>
+
+   <div class="grid" style="grid-template-columns:1fr 1fr;margin-top:14px">
+    <div class="card"><div class="chead"><h3>Spend by model</h3></div>
+     <div class="cbody">${anBars(d.by_model, t.cost_usd, r=>money(r.cost_usd))}</div></div>
+    <div class="card"><div class="chead"><h3>Spend by vendor</h3></div>
+     <div class="cbody">${anBars(d.by_provider, t.cost_usd, r=>money(r.cost_usd))}
+      <p class="muted" style="font-size:12px;margin-top:10px">One ledger across every vendor.
+       This is the number to reconcile against their invoices.</p></div></div>
+   </div>
+
+   <div class="card" style="margin-top:14px"><div class="chead"><h3>Spend by application</h3></div>
+    <div class="cbody">${anBars(d.by_app, t.cost_usd, r=>money(r.cost_usd))}</div></div>`);
 }
 
 /* ---------- Limits / Keys / Team / Billing / Audit / Settings ---------- */
