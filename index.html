@@ -1238,8 +1238,12 @@ async function issueKey(){
     <div class="field" style="margin-top:8px"><label class="hint">Role <span style="color:#e3b341">required</span></label>
       <select class="input" id="nk-role" onchange="issueKeyCheck()"><option value="">Choose a role…</option>${opts(DASH.options.roles)}</select></div>
     <div class="field" style="margin-top:8px"><label class="hint">Department <span style="color:#e3b341">required</span></label>
-      <select class="input" id="nk-dept" onchange="issueKeyCheck()"><option value="">Choose a department…</option>${opts(DASH.options.departments)}</select></div>
-    <div class="hint">Every TDR this key writes is attributed here. It is a property of the KEY, not the person.</div>
+      ${DASH.options.departments.length
+        ? `<select class="input" id="nk-dept" onchange="issueKeyCheck()"><option value="">Choose a department…</option>${opts(DASH.options.departments)}</select>`
+        : `<input class="input" id="nk-dept" placeholder="tradeview" oninput="issueKeyCheck()">`}</div>
+    <div class="hint">Every TDR this key writes is attributed here. It is a property of the KEY, not the person.${
+      DASH.options.departments.length ? '' :
+      ' <strong>Type the department slug</strong> &mdash; the department list could not be loaded (no /org/departments endpoint exists yet), so this falls back to free text rather than blocking the mint.'}</div>
     <div class="field" style="margin-top:8px"><label class="hint">Notification email <span style="color:#e3b341">required</span></label>
       <input class="input" id="nk-email" type="email" placeholder="you@example.com" oninput="issueKeyCheck()"></div>
     <div class="hint">Where the one-time collection link is sent. The key is not shown here.</div>
