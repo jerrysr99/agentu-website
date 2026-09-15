@@ -261,6 +261,12 @@
       <p class="sub">This is the key your agent sends to us. It can call only the models
         its role allows.</p>
 
+      <label for="klabel">Name <span style="text-transform:none;color:#e3b341">required</span></label>
+      <input id="klabel" type="text" placeholder="Meta Muse" autocomplete="off" maxlength="80">
+      <div class="hint">What this key is FOR &mdash; the platform or agent that will send
+        it, not the person who minted it. This is how the key is identified in the list
+        below and in your analytics, so give each platform its own.</div>
+
       <label for="krole">Role <span style="text-transform:none;color:#e3b341">required</span></label>
       <select id="krole"></select>
       <div class="hint">Decides which models this key may call. Admin covers every
@@ -272,12 +278,12 @@
         It is a property of the KEY, not of the person: someone working across two
         departments holds two keys. Both travel with the key through a rotation.</div>
 
-      <label for="kassign">Send to <span style="text-transform:none">(optional)</span></label>
-      <input id="kassign" type="email" placeholder="developer@example.com" autocomplete="off">
-      <div class="hint">The key is named for whoever it belongs to. Leave this blank
-        and the key is yours &mdash; named for your address and shown here once.
-        Enter someone else's and we email them a one-time link to collect it; the
-        key is never put in an email, and you will not see it either.</div>
+      <label for="kassign">Notification email <span style="text-transform:none;color:#e3b341">required</span></label>
+      <input id="kassign" type="email" placeholder="you@example.com" autocomplete="off">
+      <div class="hint">Where we send the one-time link to collect this key, and where
+        every future rotation of it is delivered. The key itself is never put in an
+        email, and it is not shown here &mdash; whoever holds this address collects it.
+        Use your own address for a key you are setting up yourself.</div>
 
       <div class="row"><button id="mintKey">Mint key</button></div>
       <div id="mintOut"></div>
@@ -1367,8 +1373,10 @@ async function mintKey(){
   try {
     var assign = document.getElementById("kassign").value.trim();
     var out = await api("POST", "/account/keys", {
+      label: document.getElementById("klabel").value.trim(),
       role_id: document.getElementById("krole").value,
       department: document.getElementById("kdept").value,
+      notify_email: assign,
       assign_email: assign
     });
     var box = document.getElementById("mintOut");
@@ -1401,7 +1409,8 @@ async function mintKey(){
       d2.innerHTML = out.queued
         ? "<div style='color:#8b949e;font-size:12px'>Key created. A one-time "
           + "collection link is on its way to <strong>" + esc(out.assigned_to)
-          + "</strong>. You will not see the key — it is theirs.</div>"
+          + "</strong>. The key is not shown here — whoever holds that inbox "
+          + "collects it.</div>"
         : "<div style='color:#e3b341;font-size:12px'>The key was created, but the "
           + "email to <strong>" + esc(out.assigned_to) + "</strong> could NOT be "
           + "sent. Revoke it below and try again.</div>";
@@ -1413,9 +1422,14 @@ async function mintKey(){
 
     if (out.role_warning) msg(out.role_warning, "warn");
     document.getElementById("kassign").value = "";
+    document.getElementById("klabel").value = "";
+    checkMintForm();   // re-disable: the form is empty again
     loadKeys();
   } catch(e){ e.detail ? msgDetail(e.detail, "err") : msg(e.message, "err"); }
-  btn.disabled = false;
+  // NOT `btn.disabled = false`: that would re-enable the button over an empty
+  // form after a successful mint, and over a form still missing a field after a
+  // failed one. The gate decides.
+  checkMintForm();
 }
 
 /* ── bootstrap ────────────────────────────────────────────────────────── */
@@ -1477,6 +1491,10 @@ document.getElementById("cancelEdit").onclick = cancelEdit;
 document.getElementById("mintKey").onclick = mintKey;
 document.getElementById("krole").onchange = checkMintForm;
 document.getElementById("kdept").onchange = checkMintForm;
+// 'input', not 'change': the button must enable as they type, not only when the
+// field loses focus -- otherwise it reads as broken.
+document.getElementById("klabel").oninput = checkMintForm;
+document.getElementById("kassign").oninput = checkMintForm;
 
 /* Both are REQUIRED (Chairman, 2026-09-13): role and department are
    characteristics of the minted key, and the TDR takes its values from the key.
@@ -1487,7 +1505,12 @@ document.getElementById("kdept").onchange = checkMintForm;
 function checkMintForm(){
   var r = document.getElementById("krole").value;
   var d = document.getElementById("kdept").value;
-  document.getElementById("mintKey").disabled = !(r && d);
+  var n = document.getElementById("klabel").value.trim();
+  var e = document.getElementById("kassign").value.trim();
+  // The address is REQUIRED because it is the only way to collect the key: the
+  // plaintext is not shown in this console once a key is delivered by email.
+  var emailOk = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e);
+  document.getElementById("mintKey").disabled = !(r && d && n && emailOk);
 }
 
 async function loadDepartments(){
