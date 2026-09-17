@@ -1211,11 +1211,13 @@ async function hydrateKeys(){
 // prompt could not ask for them, so it minted keys that could not be used.
 async function issueKeyOptions(){
   if(DASH.options.departments.length && DASH.options.roles.length) return;
-  const [roles, org] = await Promise.all([api('/account/roles'), api('/org/overview')]);
+  // /org/departments, not /org/overview: overview does not exist either, and
+  // departments is the list this form actually needs.
+  const [roles, depts] = await Promise.all([api('/account/roles'), api('/org/departments')]);
   if(roles.ok && roles.data)
     DASH.options.roles = (roles.data.roles||[]).map(r => [r.role_id, r.name || r.role_id]);
-  if(org.ok && org.data)
-    DASH.options.departments = (org.data.departments||[]).map(d => [d.slug, d.name || d.slug]);
+  if(depts.ok && depts.data)
+    DASH.options.departments = (depts.data.rows||[]).map(d => [d.slug, d.name || d.slug]);
 }
 function issueKeyCheck(){
   const g = id => (document.getElementById(id)||{}).value || '';
