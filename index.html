@@ -2075,6 +2075,71 @@ async function loadAnalytics(force){
 
 /* A horizontal bar row. Shares the .bar/.bt/.bv classes the rest of the console
    already uses, so this looks like the product rather than like a new page. */
+// The Front End Agent panel.
+//
+// It leads with NET, not compression. A compression figure on its own is how a
+// feature like this flatters itself: 60% smaller prompts sounds decisive and
+// says nothing, because the compressions are themselves a model call on every
+// request. Saved-minus-spent is the only number that decides anything, and it
+// is routinely negative for a cheap model compressing an already-short prompt.
+//
+// MEASURED and LIVE are shown apart, never averaged. Measured rows are shadow
+// runs -- the compression was computed and paid for, the original prompt still
+// went to the expensive model. Averaging the two produces a number describing
+// neither, and destroys the baseline you would compare against.
+function feaPanel(f){
+  if(!f || !f.available) return '';
+  if(!f.ran) return `
+   <div class="card" style="margin-top:14px"><div class="cbody">
+     <div style="font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--faint)">Front End Agent</div>
+     <div class="muted" style="font-size:13px;margin-top:6px">
+       Configured, but it has not run on any request in this window. It skips prompts
+       under 1,200 characters, tool-call turns and structured content &mdash; below that
+       size the compression cannot save more than the call to make it costs.</div>
+   </div></div>`;
+
+  const side = (s, label, note) => {
+    if(!s) return '';
+    const good = s.net_usd_est > 0;
+    return `
+     <div style="flex:1 1 300px">
+       <div style="font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--faint)">${label}</div>
+       <div style="font-family:var(--mono);font-size:30px;font-weight:600;line-height:1.15;margin:4px 0 2px;color:${good?'var(--good)':'var(--warn,#d29922)'}">
+         ${s.net_usd_est < 0 ? '-' + money(Math.abs(s.net_usd_est)) : '+' + money(s.net_usd_est)}</div>
+       <div style="font-size:13px;color:var(--slate)">net, after paying ${money(s.fea_cost_usd)} to compress</div>
+       <div class="bar" style="margin-top:8px"><span class="bl">Saved (est)</span>
+         <span class="bt"><i style="width:${Math.min(100,Math.max(2,(s.saved_usd_est/Math.max(s.saved_usd_est,s.fea_cost_usd)*100)))}%;background:var(--good)"></i></span>
+         <span class="bv">${money(s.saved_usd_est)}</span></div>
+       <div class="bar"><span class="bl">Cost to compress</span>
+         <span class="bt"><i style="width:${Math.min(100,Math.max(2,(s.fea_cost_usd/Math.max(s.saved_usd_est,s.fea_cost_usd)*100)))}%;background:var(--slate)"></i></span>
+         <span class="bv">${money(s.fea_cost_usd)}</span></div>
+       <div class="muted" style="font-size:11.5px;margin-top:8px">
+         ${fmt(s.requests)} requests &middot; ${fmt(s.chars_in)} &rarr; ${fmt(s.chars_out)} chars
+         (<strong>${s.compression_pct}% smaller</strong>) &middot; ~${fmt(s.tokens_saved_est)} tokens saved.
+         ${note}</div>
+     </div>`;
+  };
+
+  return `
+   <div class="card" style="margin-top:14px">
+    <div class="cbody">
+     <div style="font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--faint)">Front End Agent &mdash; is the compression paying?</div>
+     <div style="display:flex;gap:26px;flex-wrap:wrap;margin-top:8px">
+       ${side(f.measured, 'Measured (shadow)', 'The compression was computed and billed; the original prompt still went to the model. This is the baseline.')}
+       ${side(f.live, 'Live (applied)', 'The compressed prompt is what the model actually received.')}
+     </div>
+     <div class="muted" style="font-size:11.5px;margin-top:10px">
+       Savings are <strong>estimated</strong>, and the estimate is stated rather than hidden:
+       characters removed are converted at this account&rsquo;s own measured
+       ${(f.measured||f.live||{}).chars_per_token || '?'} characters per token, then priced at its own
+       blended input rate. Estimated because the smaller request was never actually made &mdash;
+       we do not bill what we did not run. The cost to compress is <strong>measured</strong>, not
+       estimated: that call really happened, including on the runs whose output was discarded.
+     </div>
+    </div>
+   </div>`;
+}
+
 function anBars(rows, total, fmtVal){
   if(!rows || !rows.length) return '<div class="muted" style="font-size:13px">Nothing in this window.</div>';
   const max = Math.max(...rows.map(r=>r.cost_usd), 0.0000001);
@@ -2141,6 +2206,8 @@ function pageAnalytics(){
      </div>
     </div>
    </div>` : ''}
+
+   ${feaPanel(d.fea)}
 
    <div class="grid" style="grid-template-columns:1fr 1fr;margin-top:14px">
     <div class="card"><div class="cbody">
