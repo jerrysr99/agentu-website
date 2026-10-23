@@ -73,7 +73,12 @@ class BuildBriefTests(unittest.TestCase):
         result = builder.build(src / "index.html", repo, site="https://agentu.ai")
         latest = result["latest"].read_text(encoding="utf-8")
         dated = result["dated"].read_text(encoding="utf-8")
-        self.assertEqual(latest, dated)
+
+        def article_of(page: str) -> str:
+            return page.split('<article class="brief-body">', 1)[1].split("</article>", 1)[0].strip()
+
+        self.assertNotEqual(latest, dated)
+        self.assertEqual(article_of(latest), article_of(dated))
         self.assertNotIn("jerrywlambert", latest.lower())
         self.assertNotIn("Daily Model Brief", latest)
         self.assertNotIn("YWDlJZ", latest)
@@ -81,7 +86,20 @@ class BuildBriefTests(unittest.TestCase):
         self.assertNotIn("sponsored by", latest.lower())
         self.assertNotIn("do not publish", latest.lower())
         self.assertIn("AgentU AI Briefing", latest)
-        self.assertIn('rel="canonical" href="https://agentu.ai/brief/2026-10-23/"', latest)
+        self.assertIn('rel="canonical" href="https://agentu.ai/brief/"', latest)
+        self.assertIn('rel="canonical" href="https://agentu.ai/brief/2026-10-23/"', dated)
+        self.assertIn('property="og:url" content="https://agentu.ai/brief/"', latest)
+        self.assertIn('data-form="sf6Cjq"', latest)
+        self.assertIn("https://assets.mailerlite.com/js/universal.js", latest)
+        self.assertIn("ml('account','2731039')", latest)
+        self.assertIn("Get the daily brief free", latest)
+        self.assertNotIn('data-form="sf6Cjq"', dated)
+        self.assertNotIn("Download today's brief", latest)
+        self.assertNotIn("Download today's brief", dated)
+        self.assertNotIn("open-brief", latest)
+        self.assertNotIn("brief-modal", latest)
+        self.assertNotIn("/api/brief-request", latest)
+        self.assertNotIn("/api/brief-request", dated)
         self.assertIn('property="og:title"', latest)
         self.assertIn('name="twitter:card" content="summary_large_image"', latest)
         for heading in (
@@ -102,18 +120,87 @@ class BuildBriefTests(unittest.TestCase):
         self.assertIn('src="price-vs-performance.png"', latest)
         self.assertTrue((repo / "brief" / "model-size-vs-price.png").is_file())
         self.assertTrue((repo / "brief" / "2026-10-23" / "price-vs-performance.png").is_file())
-        self.assertIn("Download today's brief", latest)
-        self.assertIn("Enroll me in the daily AgentU AI Briefing", latest)
-        self.assertIn('id="brief-enroll" name="enroll" type="checkbox" checked', latest)
-        self.assertIn('id="brief-company"', latest)
-        self.assertIn('"/api/brief-request"', latest)
-        self.assertIn('brief_date: DATE', latest)
-        self.assertIn("Check your inbox", latest)
         self.assertNotIn("\u2014", latest.split("<article", 1)[0])
+        self.assertNotIn("\u2014", dated.split("<article", 1)[0])
         self.assertEqual(result["pdf"].read_bytes(), b"%PDF-1.4")
         self.assertEqual(result["pdf"].name, "2026-10-23.pdf")
         self.assertFalse((repo / "brief" / "2026-10-23.pdf").exists())
         self.assertFalse(list((repo / "brief").rglob("*.pdf")))
+
+    def test_older_build_does_not_replace_newer_latest(self):
+        builder = load_builder()
+        base = Path("/tmp/brief-build") / "older_keeps_newer"
+        if base.exists():
+            shutil.rmtree(base)
+        repo = base / "repo"
+
+        def plant(date: str, deck: str) -> Path:
+            src = base / "in" / date
+            src.mkdir(parents=True)
+            text = SOURCE.replace(
+                "No vendor changed a token price on any model I track today.",
+                deck,
+            )
+            (src / "index.html").write_text(text, encoding="utf-8")
+            (src / "model-size-vs-price.png").write_bytes(PNG)
+            (src / "price-vs-performance.png").write_bytes(PNG)
+            return src
+
+        newer = plant("2026-10-24", "Newer edition deck sentence.")
+        older = plant("2026-10-23", "Older edition deck sentence.")
+        builder.build(newer / "index.html", repo, site="https://agentu.ai")
+        before = (repo / "brief" / "index.html").read_text(encoding="utf-8")
+        builder.build(older / "index.html", repo, site="https://agentu.ai")
+        latest = (repo / "brief" / "index.html").read_text(encoding="utf-8")
+        dated_old = (repo / "brief" / "2026-10-23" / "index.html").read_text(encoding="utf-8")
+        self.assertEqual(before, latest)
+        self.assertIn("<h1>October 24, 2026</h1>", latest)
+        self.assertIn("Newer edition deck sentence.", latest)
+        self.assertNotIn("Older edition deck sentence.", latest)
+        self.assertIn('data-form="sf6Cjq"', latest)
+        self.assertIn("<h1>October 23, 2026</h1>", dated_old)
+        self.assertIn("Older edition deck sentence.", dated_old)
+        self.assertNotIn('data-form="sf6Cjq"', dated_old)
+        self.assertNotIn("Download today's brief", latest)
+        self.assertNotIn("Download today's brief", dated_old)
+
+    def test_refresh_strips_download_and_keeps_latest_form(self):
+        builder = load_builder()
+        base = Path("/tmp/brief-build") / "refresh_latest"
+        if base.exists():
+            shutil.rmtree(base)
+        src = base / "in" / "2026-10-23"
+        repo = base / "repo"
+        src.mkdir(parents=True)
+        (src / "index.html").write_text(SOURCE, encoding="utf-8")
+        (src / "model-size-vs-price.png").write_bytes(PNG)
+        (src / "price-vs-performance.png").write_bytes(PNG)
+        result = builder.build(src / "index.html", repo, site="https://agentu.ai")
+        dated_path = result["dated"]
+        html = dated_path.read_text(encoding="utf-8")
+        dated_path.write_text(
+            html.replace(
+                "</header>",
+                '<div class="actions"><button type="button" id="open-brief">Download today\'s brief</button></div></header>',
+                1,
+            ),
+            encoding="utf-8",
+        )
+        builder.rewrite_dated_pages(repo, "https://agentu.ai")
+        once = dated_path.read_text(encoding="utf-8")
+        self.assertNotIn("Download today's brief", once)
+        self.assertNotIn("open-brief", once)
+        builder.rewrite_dated_pages(repo, "https://agentu.ai")
+        self.assertEqual(once, dated_path.read_text(encoding="utf-8"))
+        latest_path = builder.publish_latest(repo, "https://agentu.ai")
+        latest = latest_path.read_text(encoding="utf-8")
+        self.assertIn('data-form="sf6Cjq"', latest)
+        self.assertIn("Get the daily brief free", latest)
+        self.assertIn("<h1>October 23, 2026</h1>", latest)
+        self.assertNotIn("Download today's brief", latest)
+        self.assertNotIn("/api/brief-request", latest)
+        again = builder.publish_latest(repo, "https://agentu.ai")
+        self.assertEqual(latest, again.read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":

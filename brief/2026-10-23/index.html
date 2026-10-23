@@ -19,6 +19,7 @@
 <meta name="twitter:image" content="https://agentu.ai/brief/2026-10-23/price-vs-performance.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Cormorant+Garamond:wght@600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
 <style>
 :root{
   --navy:#12193F; --navy2:#1B2350; --gold:#C6A241; --gold-d:#A9852B; --gold-ink:#8A6410; --gold-soft:#F4EBCF;
@@ -56,8 +57,11 @@ a:hover{text-decoration:underline}
 .hero h1{font-family:var(--disp);font-size:clamp(34px,5vw,56px);font-weight:600;line-height:1.08;margin-top:12px}
 .hero .deck{color:#B9C1E4;font-size:17px;line-height:1.6;max-width:68ch;margin-top:16px}
 .hero .meta{color:#8F99C6;font-size:13px;margin-top:12px}
-.hero .actions{margin-top:22px}
 .sect{padding:36px max(24px,5vw) 72px}
+.subscribe{background:#fff;border-bottom:1px solid var(--line);padding:28px max(24px,5vw) 32px}
+.subscribe-inner{max-width:640px}
+.subscribe h2{font-family:var(--disp);font-size:clamp(28px,3.2vw,40px);font-weight:600;line-height:1.15;color:var(--navy);margin:0 0 16px}
+.signup{max-width:640px}
 .brief-body{max-width:960px}
 .brief-body h2{font-family:var(--disp);font-size:clamp(24px,3vw,32px);font-weight:600;line-height:1.2;margin:34px 0 12px;color:var(--navy)}
 .brief-body p,.brief-body li{font-size:15.5px;line-height:1.65}
@@ -79,22 +83,6 @@ table.data .num{text-align:right;white-space:nowrap}
 img.chart{display:block;width:100%;height:auto;background:#fff;border:1px solid var(--line);border-radius:14px;margin:8px 0 12px}
 .foot{background:#10152F;color:#8F99C6;padding:36px max(24px,5vw);font-size:12.8px;display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
 .foot a{color:#AEB7DE}
-.modal-back{position:fixed;inset:0;z-index:80;background:rgba(18,25,63,.55);display:flex;align-items:flex-start;justify-content:center;padding:24px 16px;overflow:auto}
-.modal-back[hidden]{display:none}
-.modal{background:#fff;color:var(--ink);border-radius:14px;max-width:440px;width:100%;padding:22px 22px 26px;box-shadow:var(--sh-lg);position:relative;margin-top:8vh}
-.modal h2{font-family:var(--disp);font-size:28px;font-weight:600;line-height:1.15;margin:0 36px 8px 0}
-.modal-sub{color:var(--slate);font-size:14px;line-height:1.5;margin:0 0 16px}
-.modal-x{position:absolute;top:10px;right:12px;border:0;background:transparent;color:var(--faint);font-size:22px;line-height:1;cursor:pointer;padding:4px}
-.field{margin-bottom:14px}
-.field label{display:block;font-size:12.5px;font-weight:600;margin-bottom:6px}
-.input{width:100%;border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:16px;font-family:var(--ui);background:#fff;color:var(--ink)}
-.input:focus{outline:none;border-color:var(--indigo);box-shadow:0 0 0 3px rgba(36,52,105,.15)}
-.check{display:flex;gap:9px;align-items:flex-start;font-size:14px;line-height:1.45;margin:2px 0 16px}
-.check input{margin-top:3px}
-.aerr{background:#FBE9E9;border:1px solid #F0C3C3;color:#9B2C2C;font-size:13px;padding:9px 12px;border-radius:8px;margin-bottom:12px}
-.success-title{font-family:var(--disp);font-size:32px;font-weight:600;color:var(--navy);margin:0 0 8px}
-#brief-success p{color:var(--slate);line-height:1.55}
-.hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
 @media(max-width:960px){
   .hero{padding:40px 20px 36px}
   .mnav{gap:12px;padding:0 14px;height:auto;min-height:60px;flex-wrap:wrap;padding-top:10px;padding-bottom:10px}
@@ -120,12 +108,12 @@ img.chart{display:block;width:100%;height:auto;background:#fff;border:1px solid 
   <a class="ml" href="/#/login">Sign in</a>
   <a class="btn gold sm" href="/#/signup">Sign up</a>
 </nav>
+
 <header class="hero">
   <span class="kicker">AgentU AI Briefing</span>
   <h1>October 23, 2026</h1>
   <p class="deck">No vendor changed a token price on any model I track today. OpenAI&#x27;s October 23 shutdown date for gpt-4.1-nano, o4-mini and gpt-image-1 has arrived, and Perplexity retires its routes to seven older OpenAI models at 7:00 PM CT tonight.</p>
   <p class="meta">Friday, October 23, 2026 · Prices as of 8:45 AM CT</p>
-  <div class="actions"><button type="button" class="btn gold big" id="open-brief">Download today's brief</button></div>
 </header>
 <main class="sect">
   <article class="brief-body">
@@ -144,99 +132,5 @@ img.chart{display:block;width:100%;height:auto;background:#fff;border:1px solid 
   <div><a href="/">Home</a> · <a href="/billing-accuracy/">Billing</a> · <a href="mailto:brief@agentu.ai">Contact</a></div>
 </footer>
 </div>
-<div id="brief-modal" class="modal-back" hidden>
-  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="brief-dialog-title">
-    <button type="button" class="modal-x" data-close aria-label="Close">&times;</button>
-    <h2 id="brief-dialog-title">Download today's brief</h2>
-    <p class="modal-sub">Enter your email and we will send today's edition.</p>
-    <form id="brief-form">
-      <div class="hp" aria-hidden="true">
-        <label for="brief-company">Company</label>
-        <input id="brief-company" name="company" type="text" tabindex="-1" autocomplete="off">
-      </div>
-      <div class="field">
-        <label for="brief-email">Email</label>
-        <input id="brief-email" name="email" type="email" class="input" required autocomplete="email" inputmode="email">
-      </div>
-      <label class="check">
-        <input id="brief-enroll" name="enroll" type="checkbox" checked>
-        <span>Enroll me in the daily AgentU AI Briefing</span>
-      </label>
-      <div id="brief-error" class="aerr" hidden role="alert"></div>
-      <button class="btn gold big" id="brief-submit" type="submit">Email it to me</button>
-    </form>
-    <div id="brief-success" hidden>
-      <p class="success-title">Check your inbox</p>
-      <p>Today's brief is on its way. If you enrolled, open the email and confirm to join the daily list.</p>
-    </div>
-  </div>
-</div>
-<script>
-(function () {
-  var DATE = "2026-10-23";
-  var openBtn = document.getElementById("open-brief");
-  var modal = document.getElementById("brief-modal");
-  var form = document.getElementById("brief-form");
-  var email = document.getElementById("brief-email");
-  var enroll = document.getElementById("brief-enroll");
-  var hp = document.getElementById("brief-company");
-  var err = document.getElementById("brief-error");
-  var ok = document.getElementById("brief-success");
-  var submit = document.getElementById("brief-submit");
-  function show() {
-    modal.hidden = false;
-    document.body.style.overflow = "hidden";
-    email.focus();
-  }
-  function hide() {
-    modal.hidden = true;
-    document.body.style.overflow = "";
-  }
-  openBtn.addEventListener("click", show);
-  modal.querySelector("[data-close]").addEventListener("click", hide);
-  modal.addEventListener("click", function (e) { if (e.target === modal) hide(); });
-  document.addEventListener("keydown", function (e) {
-    if (e.key === "Escape" && !modal.hidden) hide();
-  });
-  function valid(v) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
-  form.addEventListener("submit", function (e) {
-    e.preventDefault();
-    err.hidden = true;
-    var addr = email.value.trim();
-    if (!valid(addr)) {
-      err.textContent = "Enter a valid email address.";
-      err.hidden = false;
-      email.focus();
-      return;
-    }
-    submit.disabled = true;
-    submit.textContent = "Sending";
-    fetch("/api/brief-request", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        email: addr,
-        enroll: !!enroll.checked,
-        brief_date: DATE,
-        page: location.pathname,
-        company: hp.value
-      })
-    }).then(function (res) {
-      return res.json().catch(function () { return {}; }).then(function (data) {
-        if (!res.ok || !data.ok) {
-          throw new Error((data && data.error) || "We could not send the brief. Try again.");
-        }
-        form.hidden = true;
-        ok.hidden = false;
-      });
-    }).catch(function (ex) {
-      err.textContent = (ex && ex.message) || "We could not send the brief. Try again.";
-      err.hidden = false;
-      submit.disabled = false;
-      submit.textContent = "Email it to me";
-    });
-  });
-})();
-</script>
 </body>
 </html>
