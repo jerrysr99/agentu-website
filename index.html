@@ -337,6 +337,10 @@ a.offer:hover .more{background:var(--gold-d);color:var(--navy)}
 .offerthumb{flex:0 0 28%;width:28%;max-width:32%;display:block;border:1px solid var(--line);border-radius:10px;overflow:hidden;box-shadow:var(--sh);line-height:0}
 .offerthumb:hover{text-decoration:none;border-color:var(--gold)}
 .offerthumb img{display:block;width:100%;height:auto}
+@media(max-width:560px){
+  .billing-offer{flex-direction:column;align-items:flex-start;gap:16px}
+  .offerthumb{flex:none;width:30%;max-width:32%}
+}
 /* Daily brief. Quieter than the hero: smaller type, white ground, no full-bleed band. */
 .briefsec{background:#fff;padding:48px max(24px,5vw) 64px;border-top:1px solid var(--line)}
 .briefsec h2{font-family:var(--disp);font-weight:600;font-size:clamp(20px,2.1vw,28px);line-height:1.25;letter-spacing:-.01em;color:var(--navy);margin:0;max-width:22em}
