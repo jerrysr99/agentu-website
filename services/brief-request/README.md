@@ -98,10 +98,14 @@ out on the request that asked for it.
 
 Copy the new file to `/srv/briefs/pdf/<date>.pdf`. The service attaches
 whichever dated PDF sorts last. Republish the HTML with
-`scripts/build_agentu_brief.py`. That script writes `/brief/` and
-`/brief/<date>/` only. It can also drop a local copy under
+`scripts/build_agentu_brief.py`. That script writes `/brief/<date>/`
+and refreshes `/brief/index.html` from the newest dated brief.
+`/brief/` shows the MailerLite signup form, then the full latest
+edition. Dated pages stay. The pages do not link to this mailer.
+The script can also drop a local copy under
 `services/brief-request/pdfs/`, which is gitignored and is not the
-web root.
+web root. `python3 scripts/build_agentu_brief.py --refresh-latest`
+rebuilds `/brief/index.html` from the dated pages already in the repo.
 
 ## Tests
 

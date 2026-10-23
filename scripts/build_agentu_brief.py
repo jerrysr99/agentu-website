@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
-"""Rebuild /brief/ and /brief/<date>/ from a Jerry Lambert brief.
+"""Rebuild /brief/<date>/ from a source brief and refresh /brief/index.html.
 
-The public pages use AgentU chrome. The series title is AgentU AI Briefing.
-Direct PDF links, the old series name, and JerryWLambert.com branding are
-removed. The PDF, when present beside the source HTML, is copied to
+/brief/ is always the newest dated edition: the MailerLite signup form,
+then the full brief. Dated pages stay at /brief/<date>/. The public pages
+use AgentU chrome. The series title is AgentU AI Briefing. Direct PDF
+links, the old series name, and JerryWLambert.com branding are removed.
+The PDF, when present beside the source HTML, is copied to
 services/brief-request/pdfs/<date>.pdf for the mailer and is not placed
-under /brief/.
+under /brief/. The pages do not link to that mailer.
 """
 
 from __future__ import annotations
@@ -44,6 +46,7 @@ PAGE = r"""<!DOCTYPE html>
 <meta name="twitter:image" content="@@OG_IMAGE@@">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Cormorant+Garamond:wght@600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+@@HEAD_EXTRA@@
 <style>
 :root{
   --navy:#12193F; --navy2:#1B2350; --gold:#C6A241; --gold-d:#A9852B; --gold-ink:#8A6410; --gold-soft:#F4EBCF;
@@ -81,8 +84,11 @@ a:hover{text-decoration:underline}
 .hero h1{font-family:var(--disp);font-size:clamp(34px,5vw,56px);font-weight:600;line-height:1.08;margin-top:12px}
 .hero .deck{color:#B9C1E4;font-size:17px;line-height:1.6;max-width:68ch;margin-top:16px}
 .hero .meta{color:#8F99C6;font-size:13px;margin-top:12px}
-.hero .actions{margin-top:22px}
 .sect{padding:36px max(24px,5vw) 72px}
+.subscribe{background:#fff;border-bottom:1px solid var(--line);padding:28px max(24px,5vw) 32px}
+.subscribe-inner{max-width:640px}
+.subscribe h2{font-family:var(--disp);font-size:clamp(28px,3.2vw,40px);font-weight:600;line-height:1.15;color:var(--navy);margin:0 0 16px}
+.signup{max-width:640px}
 .brief-body{max-width:960px}
 .brief-body h2{font-family:var(--disp);font-size:clamp(24px,3vw,32px);font-weight:600;line-height:1.2;margin:34px 0 12px;color:var(--navy)}
 .brief-body p,.brief-body li{font-size:15.5px;line-height:1.65}
@@ -104,22 +110,6 @@ table.data .num{text-align:right;white-space:nowrap}
 img.chart{display:block;width:100%;height:auto;background:#fff;border:1px solid var(--line);border-radius:14px;margin:8px 0 12px}
 .foot{background:#10152F;color:#8F99C6;padding:36px max(24px,5vw);font-size:12.8px;display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
 .foot a{color:#AEB7DE}
-.modal-back{position:fixed;inset:0;z-index:80;background:rgba(18,25,63,.55);display:flex;align-items:flex-start;justify-content:center;padding:24px 16px;overflow:auto}
-.modal-back[hidden]{display:none}
-.modal{background:#fff;color:var(--ink);border-radius:14px;max-width:440px;width:100%;padding:22px 22px 26px;box-shadow:var(--sh-lg);position:relative;margin-top:8vh}
-.modal h2{font-family:var(--disp);font-size:28px;font-weight:600;line-height:1.15;margin:0 36px 8px 0}
-.modal-sub{color:var(--slate);font-size:14px;line-height:1.5;margin:0 0 16px}
-.modal-x{position:absolute;top:10px;right:12px;border:0;background:transparent;color:var(--faint);font-size:22px;line-height:1;cursor:pointer;padding:4px}
-.field{margin-bottom:14px}
-.field label{display:block;font-size:12.5px;font-weight:600;margin-bottom:6px}
-.input{width:100%;border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:16px;font-family:var(--ui);background:#fff;color:var(--ink)}
-.input:focus{outline:none;border-color:var(--indigo);box-shadow:0 0 0 3px rgba(36,52,105,.15)}
-.check{display:flex;gap:9px;align-items:flex-start;font-size:14px;line-height:1.45;margin:2px 0 16px}
-.check input{margin-top:3px}
-.aerr{background:#FBE9E9;border:1px solid #F0C3C3;color:#9B2C2C;font-size:13px;padding:9px 12px;border-radius:8px;margin-bottom:12px}
-.success-title{font-family:var(--disp);font-size:32px;font-weight:600;color:var(--navy);margin:0 0 8px}
-#brief-success p{color:var(--slate);line-height:1.55}
-.hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
 @media(max-width:960px){
   .hero{padding:40px 20px 36px}
   .mnav{gap:12px;padding:0 14px;height:auto;min-height:60px;flex-wrap:wrap;padding-top:10px;padding-bottom:10px}
@@ -145,12 +135,12 @@ img.chart{display:block;width:100%;height:auto;background:#fff;border:1px solid 
   <a class="ml" href="/#/login">Sign in</a>
   <a class="btn gold sm" href="/#/signup">Sign up</a>
 </nav>
+@@SUBSCRIBE@@
 <header class="hero">
   <span class="kicker">AgentU AI Briefing</span>
   <h1>@@H1@@</h1>
   @@DECK@@
   @@META@@
-  <div class="actions"><button type="button" class="btn gold big" id="open-brief">Download today's brief</button></div>
 </header>
 <main class="sect">
   <article class="brief-body">
@@ -162,103 +152,29 @@ img.chart{display:block;width:100%;height:auto;background:#fff;border:1px solid 
   <div><a href="/">Home</a> · <a href="/billing-accuracy/">Billing</a> · <a href="mailto:brief@agentu.ai">Contact</a></div>
 </footer>
 </div>
-<div id="brief-modal" class="modal-back" hidden>
-  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="brief-dialog-title">
-    <button type="button" class="modal-x" data-close aria-label="Close">&times;</button>
-    <h2 id="brief-dialog-title">Download today's brief</h2>
-    <p class="modal-sub">Enter your email and we will send today's edition.</p>
-    <form id="brief-form">
-      <div class="hp" aria-hidden="true">
-        <label for="brief-company">Company</label>
-        <input id="brief-company" name="company" type="text" tabindex="-1" autocomplete="off">
-      </div>
-      <div class="field">
-        <label for="brief-email">Email</label>
-        <input id="brief-email" name="email" type="email" class="input" required autocomplete="email" inputmode="email">
-      </div>
-      <label class="check">
-        <input id="brief-enroll" name="enroll" type="checkbox" checked>
-        <span>Enroll me in the daily AgentU AI Briefing</span>
-      </label>
-      <div id="brief-error" class="aerr" hidden role="alert"></div>
-      <button class="btn gold big" id="brief-submit" type="submit">Email it to me</button>
-    </form>
-    <div id="brief-success" hidden>
-      <p class="success-title">Check your inbox</p>
-      <p>Today's brief is on its way. If you enrolled, open the email and confirm to join the daily list.</p>
-    </div>
-  </div>
-</div>
-<script>
-(function () {
-  var DATE = "@@DATE@@";
-  var openBtn = document.getElementById("open-brief");
-  var modal = document.getElementById("brief-modal");
-  var form = document.getElementById("brief-form");
-  var email = document.getElementById("brief-email");
-  var enroll = document.getElementById("brief-enroll");
-  var hp = document.getElementById("brief-company");
-  var err = document.getElementById("brief-error");
-  var ok = document.getElementById("brief-success");
-  var submit = document.getElementById("brief-submit");
-  function show() {
-    modal.hidden = false;
-    document.body.style.overflow = "hidden";
-    email.focus();
-  }
-  function hide() {
-    modal.hidden = true;
-    document.body.style.overflow = "";
-  }
-  openBtn.addEventListener("click", show);
-  modal.querySelector("[data-close]").addEventListener("click", hide);
-  modal.addEventListener("click", function (e) { if (e.target === modal) hide(); });
-  document.addEventListener("keydown", function (e) {
-    if (e.key === "Escape" && !modal.hidden) hide();
-  });
-  function valid(v) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
-  form.addEventListener("submit", function (e) {
-    e.preventDefault();
-    err.hidden = true;
-    var addr = email.value.trim();
-    if (!valid(addr)) {
-      err.textContent = "Enter a valid email address.";
-      err.hidden = false;
-      email.focus();
-      return;
-    }
-    submit.disabled = true;
-    submit.textContent = "Sending";
-    fetch("/api/brief-request", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        email: addr,
-        enroll: !!enroll.checked,
-        brief_date: DATE,
-        page: location.pathname,
-        company: hp.value
-      })
-    }).then(function (res) {
-      return res.json().catch(function () { return {}; }).then(function (data) {
-        if (!res.ok || !data.ok) {
-          throw new Error((data && data.error) || "We could not send the brief. Try again.");
-        }
-        form.hidden = true;
-        ok.hidden = false;
-      });
-    }).catch(function (ex) {
-      err.textContent = (ex && ex.message) || "We could not send the brief. Try again.";
-      err.hidden = false;
-      submit.disabled = false;
-      submit.textContent = "Email it to me";
-    });
-  });
-})();
-</script>
 </body>
 </html>
 """
+
+# Same embed already used on the billing page. Latest /brief/ only.
+MAILERLITE = (
+    "<!-- MailerLite Universal -->"
+    "<script>"
+    "(function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[]).push(arguments);},l=d.createElement(e),l.async=1,l.src=u,n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})"
+    "(window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');"
+    "ml('account','2731039');"
+    "</script>"
+    "<!-- End MailerLite Universal -->"
+)
+SUBSCRIBE = """<section class="subscribe" id="subscribe" aria-labelledby="subscribe-title">
+  <div class="subscribe-inner">
+    <h2 id="subscribe-title">Get the daily brief free</h2>
+    <div class="ml-embedded signup" data-form="sf6Cjq"></div>
+  </div>
+</section>"""
+
+DATE_DIR = re.compile(r"\d{4}-\d{2}-\d{2}")
+IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".webp", ".gif", ".svg"}
 
 
 def pretty_date(iso_date: str) -> str:
@@ -346,8 +262,17 @@ def plain_text(fragment: str) -> str:
     return re.sub(r"\s+", " ", text).strip()
 
 
-def render_page(date: str, article: str, deck: str, meta: str, image_name: str, site: str) -> str:
-    canonical = f"{site.rstrip('/')}/brief/{date}/"
+def render_page(
+    date: str,
+    article: str,
+    deck: str,
+    meta: str,
+    image_name: str,
+    site: str,
+    latest: bool = False,
+) -> str:
+    root = site.rstrip("/")
+    canonical = f"{root}/brief/" if latest else f"{root}/brief/{date}/"
     title = f"{pretty_date(date)} · {SERIES}"
     description = plain_text(deck) or f"{SERIES} for {pretty_date(date)}."
     if len(description) > 300:
@@ -364,8 +289,9 @@ def render_page(date: str, article: str, deck: str, meta: str, image_name: str, 
         "@@H1@@": html.escape(pretty_date(date)),
         "@@DECK@@": deck_html,
         "@@META@@": meta_html,
-        "@@DATE@@": date,
         "@@ARTICLE@@": article,
+        "@@HEAD_EXTRA@@": MAILERLITE if latest else "",
+        "@@SUBSCRIBE@@": SUBSCRIBE if latest else "",
     }
     for token, value in replacements.items():
         page = page.replace(token, value)
@@ -380,6 +306,120 @@ def copy_assets(src_dir: Path, names: list[str], destinations: list[Path]) -> No
         for dest_dir in destinations:
             dest_dir.mkdir(parents=True, exist_ok=True)
             shutil.copy2(source, dest_dir / name)
+
+
+def list_dated(repo: Path) -> list[str]:
+    root = repo / "brief"
+    if not root.is_dir():
+        return []
+    found = [
+        child.name
+        for child in root.iterdir()
+        if child.is_dir() and DATE_DIR.fullmatch(child.name) and (child / "index.html").is_file()
+    ]
+    return sorted(found)
+
+
+def copy_edition_images(src_dir: Path, dest_dir: Path) -> None:
+    if not src_dir.is_dir():
+        return
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    for path in src_dir.iterdir():
+        if path.is_file() and path.suffix.lower() in IMAGE_SUFFIXES:
+            target = dest_dir / path.name
+            if target.resolve() != path.resolve():
+                shutil.copy2(path, target)
+
+
+def extract_edition(page_html: str, date: str) -> dict:
+    article_match = re.search(r'<article class="brief-body">\s*(.*?)\s*</article>', page_html, flags=re.S)
+    if not article_match:
+        raise SystemExit(f"brief {date} has no article")
+    article = article_match.group(1).strip()
+    deck_match = re.search(r'<p class="deck">(.*?)</p>', page_html, flags=re.S)
+    meta_match = re.search(r'<p class="meta">(.*?)</p>', page_html, flags=re.S)
+    image_match = re.search(r'<meta property="og:image" content="([^"]*)">', page_html)
+    image_name = Path(html.unescape(image_match.group(1))).name if image_match else ""
+    if not image_name:
+        names = re.findall(r"""<img[^>]*src=['"]([^'"]+)['"]""", article)
+        if "price-vs-performance.png" in names:
+            image_name = "price-vs-performance.png"
+        elif names:
+            image_name = Path(names[0]).name
+    return {
+        "date": date,
+        "article": article,
+        "deck": deck_match.group(1).strip() if deck_match else "",
+        "meta": meta_match.group(1).strip() if meta_match else "",
+        "image_name": image_name,
+    }
+
+
+def _write_checked(path: Path, page: str) -> None:
+    if "@@" in page:
+        raise SystemExit(f"unfilled template token in {path}")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(page, encoding="utf-8")
+
+
+def rewrite_dated_pages(repo: Path, site: str = SITE) -> list[str]:
+    """Re-render each dated page from its own article so the download UI stays off."""
+    dates = list_dated(repo)
+    if not dates:
+        raise SystemExit("no dated briefs under brief/")
+    for date in dates:
+        path = repo / "brief" / date / "index.html"
+        parts = extract_edition(path.read_text(encoding="utf-8"), date)
+        page = render_page(
+            parts["date"],
+            parts["article"],
+            parts["deck"],
+            parts["meta"],
+            parts["image_name"],
+            site,
+            latest=False,
+        )
+        _write_checked(path, page)
+    return dates
+
+
+def publish_latest(repo: Path, site: str = SITE, current: dict | None = None) -> Path:
+    """Write /brief/index.html from the newest dated edition."""
+    dates = list_dated(repo)
+    if current and current["date"] not in dates:
+        dates = sorted([*dates, current["date"]])
+    if not dates:
+        raise SystemExit("no dated brief to publish at /brief/")
+    newest = dates[-1]
+    latest_dir = repo / "brief"
+    latest_dir.mkdir(parents=True, exist_ok=True)
+    if current and current["date"] == newest:
+        copy_assets(current["assets_from"], current["asset_names"], [latest_dir])
+        page = render_page(
+            current["date"],
+            current["article"],
+            current["deck"],
+            current["meta"],
+            current["image_name"],
+            site,
+            latest=True,
+        )
+    else:
+        source_dir = repo / "brief" / newest
+        copy_edition_images(source_dir, latest_dir)
+        parts = extract_edition((source_dir / "index.html").read_text(encoding="utf-8"), newest)
+        page = render_page(
+            parts["date"],
+            parts["article"],
+            parts["deck"],
+            parts["meta"],
+            parts["image_name"],
+            site,
+            latest=True,
+        )
+    path = latest_dir / "index.html"
+    _write_checked(path, page)
+    return path
 
 
 def copy_pdf(src_dir: Path, date: str, pdf_out: Path) -> Path | None:
@@ -407,21 +447,30 @@ def build(source: Path, repo: Path, date: str | None = None, site: str = SITE, p
     if re.search(r"\b(?:pdf|back)\b", article) and ".pdf" in article:
         raise SystemExit("a PDF link survived the rewrite")
     image_name = "price-vs-performance.png" if "price-vs-performance.png" in names else (names[0] if names else "")
-    page = render_page(iso, article, deck, meta, image_name, site)
-    if "@@" in page:
-        raise SystemExit("unfilled template token in brief page")
-    latest_dir = repo / "brief"
+    page = render_page(iso, article, deck, meta, image_name, site, latest=False)
     dated_dir = repo / "brief" / iso
-    for directory in (latest_dir, dated_dir):
-        directory.mkdir(parents=True, exist_ok=True)
-    copy_assets(source.parent, names, [latest_dir, dated_dir])
-    (latest_dir / "index.html").write_text(page, encoding="utf-8")
-    (dated_dir / "index.html").write_text(page, encoding="utf-8")
+    dated_dir.mkdir(parents=True, exist_ok=True)
+    copy_assets(source.parent, names, [dated_dir])
+    dated_path = dated_dir / "index.html"
+    _write_checked(dated_path, page)
+    latest_path = publish_latest(
+        repo,
+        site,
+        current={
+            "date": iso,
+            "article": article,
+            "deck": deck,
+            "meta": meta,
+            "image_name": image_name,
+            "assets_from": source.parent,
+            "asset_names": names,
+        },
+    )
     pdf_target = copy_pdf(source.parent, iso, pdf_out or (repo / "services" / "brief-request" / "pdfs"))
     return {
         "date": iso,
-        "latest": latest_dir / "index.html",
-        "dated": dated_dir / "index.html",
+        "latest": latest_path,
+        "dated": dated_path,
         "images": names,
         "pdf": pdf_target,
     }
@@ -429,16 +478,32 @@ def build(source: Path, repo: Path, date: str | None = None, site: str = SITE, p
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Publish an AgentU AI Briefing page from a source brief.")
-    parser.add_argument("--source", required=True, type=Path, help="Path to the source brief index.html")
+    parser.add_argument("--source", type=Path, help="Path to the source brief index.html")
     parser.add_argument("--repo", type=Path, default=Path(__file__).resolve().parents[1], help="agentu-website repo root")
     parser.add_argument("--date", help="YYYY-MM-DD. Default: a dated directory in the source path")
     parser.add_argument("--site", default=SITE, help="Canonical site origin")
     parser.add_argument("--pdf-out", type=Path, help="Directory or .pdf path for the mailer copy")
+    parser.add_argument(
+        "--refresh-latest",
+        action="store_true",
+        help="Rewrite /brief/index.html from the newest dated brief. With no --source, also re-render dated pages.",
+    )
     args = parser.parse_args(argv)
+    if args.source is None:
+        if not args.refresh_latest:
+            parser.error("pass --source, or --refresh-latest to rebuild /brief/ from dated pages")
+        dates = rewrite_dated_pages(args.repo, args.site)
+        path = publish_latest(args.repo, args.site)
+        print(f"wrote {path} from {dates[-1]}")
+        for date in dates:
+            print(f"wrote {args.repo / 'brief' / date / 'index.html'}")
+        return 0
     if not args.source.is_file():
         print(f"source not found: {args.source}", file=sys.stderr)
         return 1
     result = build(args.source, args.repo, args.date, args.site, args.pdf_out)
+    if args.refresh_latest:
+        rewrite_dated_pages(args.repo, args.site)
     print(f"wrote {result['latest']}")
     print(f"wrote {result['dated']}")
     if result["pdf"]:
