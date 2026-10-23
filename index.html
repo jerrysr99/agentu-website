@@ -326,6 +326,17 @@ a.offer h3{font-family:var(--disp);font-size:clamp(26px,3vw,32px);font-weight:60
 a.offer p{font-size:14.5px;line-height:1.6}
 a.offer .more{display:inline-flex;align-items:center;margin-top:16px;font-weight:600;font-size:13.5px;color:var(--navy);background:var(--gold);border-radius:8px;padding:9px 16px}
 a.offer:hover .more{background:var(--gold-d);color:var(--navy)}
+.billing-offer{display:flex;align-items:center;gap:20px;max-width:720px}
+.billing-offer .offer-copy{flex:1 1 auto;min-width:0;color:inherit;text-decoration:none}
+.billing-offer .offer-copy:hover{text-decoration:none}
+.billing-offer:has(.offer-copy:hover){border-color:var(--gold)}
+.billing-offer .offer-copy h3{font-family:var(--disp);font-size:clamp(26px,3vw,32px);font-weight:600;line-height:1.15;margin:10px 0 8px}
+.billing-offer .offer-copy p{font-size:14.5px;line-height:1.6}
+.billing-offer .offer-copy .more{display:inline-flex;align-items:center;margin-top:16px;font-weight:600;font-size:13.5px;color:var(--navy);background:var(--gold);border-radius:8px;padding:9px 16px}
+.billing-offer .offer-copy:hover .more{background:var(--gold-d);color:var(--navy)}
+.offerthumb{flex:0 0 28%;width:28%;max-width:32%;display:block;border:1px solid var(--line);border-radius:10px;overflow:hidden;box-shadow:var(--sh);line-height:0}
+.offerthumb:hover{text-decoration:none;border-color:var(--gold)}
+.offerthumb img{display:block;width:100%;height:auto}
 /* Daily brief. Quieter than the hero: smaller type, white ground, no full-bleed band. */
 .briefsec{background:#fff;padding:48px max(24px,5vw) 64px;border-top:1px solid var(--line)}
 .briefsec h2{font-family:var(--disp);font-weight:600;font-size:clamp(20px,2.1vw,28px);line-height:1.25;letter-spacing:-.01em;color:var(--navy);margin:0;max-width:22em}
@@ -653,14 +664,17 @@ function pageMarketing(){
    </div>
 
    <section class="sect alt offersect" id="billing-offer">
-    <a class="moat offer" href="/billing-accuracy/">
-     <div class="mi" aria-hidden="true">$</div>
-     <span class="kicker">Billing accuracy</span>
-     <h3>Are You Being Billed Correctly?</h3>
-     <p>AI model prices change without warning, sometimes overnight. Token pools, cache rates and tool fees are billed in different ways by every vendor. Buyers who don't track the changes pay for them.</p>
-     <p>Get the daily model brief free. Bill check, coming soon.</p>
-     <span class="more">See recent price changes</span>
-    </a>
+    <div class="moat billing-offer">
+     <a class="offer-copy" href="/billing-accuracy/">
+      <div class="mi" aria-hidden="true">$</div>
+      <span class="kicker">Billing accuracy</span>
+      <h3>Are You Being Billed Correctly?</h3>
+      <p>AI model prices change without warning, sometimes overnight. Token pools, cache rates and tool fees are billed in different ways by every vendor. Buyers who don't track the changes pay for them.</p>
+      <p>Get the daily model brief free. Bill check, coming soon.</p>
+      <span class="more">See recent price changes</span>
+     </a>
+     <a class="offerthumb" href="/brief/"><img src="img/agentu-ai-briefing-2026-10-23.webp" width="440" height="662" alt="Today's AI pricing brief"></a>
+    </div>
    </section>
 
    <section class="sect alt offersect" id="brief-offer">
