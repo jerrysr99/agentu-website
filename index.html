@@ -326,6 +326,24 @@ a.offer h3{font-family:var(--disp);font-size:clamp(26px,3vw,32px);font-weight:60
 a.offer p{font-size:14.5px;line-height:1.6}
 a.offer .more{display:inline-flex;align-items:center;margin-top:16px;font-weight:600;font-size:13.5px;color:var(--navy);background:var(--gold);border-radius:8px;padding:9px 16px}
 a.offer:hover .more{background:var(--gold-d);color:var(--navy)}
+/* Daily brief. Quieter than the hero: smaller type, white ground, no full-bleed band. */
+.briefsec{background:#fff;padding:48px max(24px,5vw) 64px;border-top:1px solid var(--line)}
+.briefsec h2{font-family:var(--disp);font-weight:600;font-size:clamp(20px,2.1vw,28px);line-height:1.25;letter-spacing:-.01em;color:var(--navy);margin:0;max-width:22em}
+.brieflead{max-width:62ch;margin:12px 0 28px;font-size:15px;line-height:1.6;color:var(--slate)}
+.briefrow{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:28px 40px;align-items:start}
+.briefside{display:flex;flex-direction:column;align-items:stretch;gap:14px;min-width:0}
+.briefshot{display:block;border:1px solid var(--line);border-radius:12px;overflow:hidden;box-shadow:var(--sh);background:#fff}
+.briefshot img{display:block;width:100%;height:auto}
+.briefside .btn{justify-content:center}
+.briefpoints h3{font-size:15px;margin:0 0 4px;color:var(--navy)}
+.briefpoints h3:not(:first-child){margin-top:18px}
+.briefpoints p{font-size:14px;line-height:1.6;color:var(--slate);margin:0}
+.briefsignup{margin-top:36px;max-width:560px;scroll-margin-top:80px}
+.briefsignup h3{font-family:var(--disp);font-size:22px;font-weight:600;color:var(--navy);margin:0 0 12px}
+@media(max-width:800px){
+  .briefrow{grid-template-columns:1fr}
+  .briefsec{padding:36px 20px 48px}
+}
 .banner{background:var(--warn-soft);color:#7A5514;font-size:12.3px;text-align:center;padding:7px 12px;border-bottom:1px solid #EAD9B0}
 .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;font-size:13px;padding:10px 18px;border-radius:9px;box-shadow:var(--sh-lg);z-index:99;opacity:0;pointer-events:none;transition:opacity .2s}
 .toast.show{opacity:1}
@@ -612,7 +630,7 @@ function pageMarketing(){
       <text x="70" y="82" text-anchor="middle" font-family="'Cormorant Garamond',serif" font-weight="700" font-size="40" letter-spacing="-2" fill="#C6A241">AU</text>
      </svg>
      <span class="kicker" style="color:var(--gold)">The smart proxy of record for LLM traffic</span>
-     <h1>One point of access to <em>every major model.</em><br>One platform to meter, rate, and reconcile.</h1>
+     <h1>One place to manage all of your <em>agentic spend</em>, to track it, manage it and reconcile it.</h1>
      <p class="hsub">Agent U puts 55 models across 12 providers behind a single governed key. Every prompt and token is metered, rated, reported, and reconciled on one platform, priced at the tariff in force and matched to the invoice.</p>
      <a class="btn gold big" href="#/" onclick="event.preventDefault();startDemo()">Take the tour</a>
      <a class="btn ghost-dark big" href="#/login" style="margin-left:10px">Sign in</a>
@@ -715,6 +733,28 @@ function pageMarketing(){
    <section class="cta"><h2>Rate every token. Reconcile every invoice.<br>Enforce every policy. Use the best model for the job.</h2>
     <p>Thirty days of traffic and your last provider invoice — we'll show you the variance and who spent it.</p>
     <a class="btn on-dark big" href="#/signup">Create your organization</a></section>
+   <section class="briefsec" id="daily-brief" aria-labelledby="brief-title">
+    <h2 id="brief-title">Included with AgentU: the daily AI pricing brief</h2>
+    <p class="brieflead">A daily record of model prices and the pricing rules around them, included with AgentU.</p>
+    <div class="briefrow">
+     <div class="briefside">
+      <a class="briefshot" href="#signup"><img src="img/agentu-ai-briefing-2026-10-23.webp" width="440" height="662" alt="AgentU AI Briefing for October 23, 2026. No token price changed on the models covered. OpenAI lists a shutdown date of October 23, 2026 for gpt-4.1-nano, o4-mini, and gpt-image-1. Perplexity retires routes to seven older OpenAI models at 7:00 PM CT. The card also lists unchanged prices and notes that Meta bills every SAM 3.1 video request for at least 50 frames."></a>
+      <a class="btn gold" href="#signup">Get the daily brief free</a>
+     </div>
+     <div class="briefpoints">
+      <h3>Token prices</h3>
+      <p>Each edition records whether list prices moved, including the days they did not.</p>
+      <h3>Pricing structure</h3>
+      <p>Cached-input prices, fast-mode availability, per-request minimums, and shutdown dates can change the amount owed while a token price stays put.</p>
+      <h3>Why keeping up matters</h3>
+      <p>AgentU has the expertise to help. It tracks, manages, and reconciles the spend, and the daily brief is included so that work rests on current vendor pricing.</p>
+     </div>
+    </div>
+    <div class="briefsignup" id="signup">
+     <h3>Get the daily brief free</h3>
+     <div class="ml-embedded" data-form="sf6Cjq"></div>
+    </div>
+   </section>
    <footer class="foot"><div><strong style="color:var(--gold)">Agent U</strong> · SmarterDev.ai · Denton, TX<br>© 2026 · All rights reserved</div>
     <div><a href="#/" onclick="toast('Stub page — add policy content before launch')">Privacy</a> · <a href="#/" onclick="toast('Stub page — add terms before launch')">Terms</a> · <a href="#/" onclick="toast('Stub page — add DPA before launch')">DPA</a> · <a href="#/" onclick="toast('Status page: wire to monitoring')">Status</a> · <a href="mailto:sam@example.com">Contact</a></div></footer>
   </div>`;
@@ -2701,6 +2741,7 @@ function render(){
       document.getElementById('root').innerHTML=pageMarketing();
       if(window._tick)clearInterval(window._tick);
       startTicker();
+      mountBriefForm();
       el=document.getElementById(id);
     }
     if(el){
@@ -2721,11 +2762,38 @@ function render(){
   }
   const fn=ROUTES[r]||pageMarketing;
   document.getElementById('root').innerHTML=fn();
-  window.scrollTo(0,0);
+  if(r.length>1&&!r.startsWith('#/')){
+    const landed=document.getElementById(r.slice(1));
+    if(landed) landed.scrollIntoView({behavior:'auto',block:'start'});
+    else window.scrollTo(0,0);
+  }else window.scrollTo(0,0);
   if(r==='#/'||r==='')startTicker();else if(window._tick)clearInterval(window._tick);
   afterRender(r);
 }
+function mountBriefForm(){
+  var slot=document.querySelector('.ml-embedded[data-form="sf6Cjq"]');
+  if(!slot) return;
+  window.ml=window.ml||function(){(window.ml.q=window.ml.q||[]).push(arguments);};
+  if(!window.__mlBriefAccount){
+    window.ml('account','2731039');
+    window.__mlBriefAccount=true;
+  }
+  if(window.__ml__initialized && window.ml && window.ml.fn && typeof window.ml.fn.renderEmbeddedForm==='function'){
+    var reload=document.createElement('script');
+    reload.async=true;
+    reload.src='https://assets.mailerlite.com/jsonp/2731039/forms/sf6Cjq?callback=ml.fn.renderEmbeddedForm&cb='+Date.now();
+    document.body.appendChild(reload);
+    return;
+  }
+  if(document.getElementById('ml-universal-js')) return;
+  var s=document.createElement('script');
+  s.id='ml-universal-js';
+  s.async=true;
+  s.src='https://assets.mailerlite.com/js/universal.js';
+  document.body.appendChild(s);
+}
 function afterRender(r){
+  if(document.querySelector('.ml-embedded[data-form="sf6Cjq"]')) mountBriefForm();
   if(r==='#/enroll'){loadEnroll();return}
   if(r.startsWith('#/app')){
     if(S.authed&&!S.demo)hydrateLive(r);
