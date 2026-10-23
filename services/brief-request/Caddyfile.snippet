@@ -1,0 +1,5 @@
+# Inside the agentu.ai / www.agentu.ai site block, before the general
+# handle /api/* that proxies to 127.0.0.1:8507. handle is first-match.
+handle /api/brief-* {
+	reverse_proxy 127.0.0.1:8720
+}

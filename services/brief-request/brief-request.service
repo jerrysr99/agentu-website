@@ -1,0 +1,17 @@
+[Unit]
+Description=AgentU AI Briefing request service
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+EnvironmentFile=/etc/brief-request.env
+WorkingDirectory=/opt/agentu-website/services/brief-request
+ExecStart=/usr/bin/python3 /opt/agentu-website/services/brief-request/server.py
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

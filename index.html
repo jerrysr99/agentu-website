@@ -377,7 +377,7 @@ a.offer:hover .more{background:var(--gold-d);color:var(--navy)}
   .side.open{left:0}
   .menu-btn{display:block}
   .mnav a.ml{display:none}
-  .mnav a.ml.billing{display:inline}
+  .mnav a.ml.billing,.mnav a.ml.briefnav{display:inline}
 }
 </style>
 </head>
@@ -611,7 +611,7 @@ function pageMarketing(){
   return `
   <div class="mk">
    <nav class="mnav"><a class="brand" href="#/"><span class="crestmk"><svg viewBox="0 0 30 31" aria-hidden="true"><path class="fill-navy st-gold" stroke-width="1.5" d="M2 2 H28 V15 Q28 25 15 30 Q2 25 2 15 Z"/><text x="15" y="21" text-anchor="middle" font-family="'Cormorant Garamond',serif" font-weight="700" font-size="16" letter-spacing="-1" class="fill-gold">AU</text></svg></span> Agent U</a>
-    <a class="ml" href="#why">Why</a><a class="ml" href="#analytics">Analytics</a><a class="ml" href="#product">Product</a><a class="ml" href="#pricing">Pricing</a><a class="ml" href="#faq">FAQ</a><a class="ml billing" href="/billing-accuracy/">Billing</a>
+    <a class="ml" href="#why">Why</a><a class="ml" href="#analytics">Analytics</a><a class="ml" href="#product">Product</a><a class="ml" href="#pricing">Pricing</a><a class="ml" href="#faq">FAQ</a><a class="ml billing" href="/billing-accuracy/">Billing</a><a class="ml briefnav" href="/brief/">Brief</a>
     <span class="sp"></span><a class="ml" href="#/login">Sign in</a><a class="ml" href="#/" onclick="event.preventDefault();startDemo()">Demo</a><a class="btn gold sm" href="#/signup">Sign up</a></nav>
    <header class="hero">
     <div>
@@ -660,6 +660,16 @@ function pageMarketing(){
      <p>AI model prices change without warning, sometimes overnight. Token pools, cache rates and tool fees are billed in different ways by every vendor. Buyers who don't track the changes pay for them.</p>
      <p>Get the daily model brief free. Bill check, coming soon.</p>
      <span class="more">See recent price changes</span>
+    </a>
+   </section>
+
+   <section class="sect alt offersect" id="brief-offer">
+    <a class="moat offer" href="/brief/">
+     <div class="mi" aria-hidden="true">B</div>
+     <span class="kicker">AgentU AI Briefing</span>
+     <h3>Today's model prices and shutdowns.</h3>
+     <p>A morning read of vendor prices, retirement dates, and where price sits against size and performance.</p>
+     <span class="more">Read today's brief</span>
     </a>
    </section>
 
