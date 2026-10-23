@@ -1,0 +1,20 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AgentU Model Dashboard</title>
+<link rel="icon" href="favicon.svg"><link rel="stylesheet" href="vendor/fonts/fonts.css"><link rel="stylesheet" href="style.css"></head>
+<body>
+<header class="band"><div class="wrap nav">
+ <a class="brand" href="#"><svg viewBox="0 0 30 31" aria-hidden="true"><path fill="#12193F" stroke="#C6A241" stroke-width="1.5" d="M2 2 H28 V15 Q28 25 15 30 Q2 25 2 15 Z"/><text x="15" y="21" text-anchor="middle" font-family="'Cormorant Garamond',serif" font-weight="700" font-size="16" letter-spacing="-1" fill="#C6A241">AU</text></svg> AgentU <span class="sub">Model Dashboard</span></a>
+ <span class="sp"></span><span class="built" id="built"></span></div>
+ <div class="wrap hero"><h1>The AI Model Landscape, In One View</h1>
+ <p class="msg">One place to manage all of your agentic spend: track it, manage it, reconcile it.</p></div></header>
+<section class="filters wrap" id="filters">
+ <label>Vendor<select id="f-vendor"></select></label>
+ <label>Source<select id="f-source"></select></label>
+ <label>Metric<select id="f-metric"></select></label>
+ <label>Model<input id="f-model" list="dl-models" placeholder="Search a model"><datalist id="dl-models"></datalist></label>
+ <label>From<input type="date" id="f-from"></label><label>To<input type="date" id="f-to"></label>
+ <button id="f-reset">Reset</button>
+</section>
+<main class="wrap" id="main"></main>
+<footer class="wrap foot" id="foot"></footer>
+<script src="app.js"></script></body></html>

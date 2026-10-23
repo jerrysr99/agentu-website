@@ -32,17 +32,44 @@ if [ ! -f "${REPO_DIR}/index.html" ]; then
   exit 1
 fi
 
+# Servable extensions. dashboard/ ships with the rest of the static site:
+# HTML, CSS, JS, JSON, SVG, and the vendored woff2 faces.
+RSYNC_FILTERS=(
+  --exclude '.git/' --exclude '.github/' --exclude 'scripts/'
+  --exclude '.gitignore' --exclude 'CLAUDE.md' --exclude '.DS_Store'
+  --include '*/'
+  --include '*.html' --include '*.css' --include '*.js' --include '*.json'
+  --include '*.png' --include '*.jpg' --include '*.jpeg'
+  --include '*.svg' --include '*.ico' --include '*.webp' --include '*.woff' --include '*.woff2'
+  --exclude '*'
+)
+
+assert_dashboard() {
+  local dest="$1"
+  local req
+  for req in \
+    dashboard/index.html \
+    dashboard/app.js \
+    dashboard/style.css \
+    dashboard/data/dashboard.json \
+    dashboard/favicon.svg \
+    dashboard/vendor/fonts/fonts.css
+  do
+    if [ ! -f "${dest}/${req}" ]; then
+      echo "✗ deploy payload missing ${req}" >&2
+      exit 1
+    fi
+  done
+  if ! compgen -G "${dest}/dashboard/vendor/fonts/"'*.woff2' > /dev/null; then
+    echo "✗ deploy payload missing dashboard font files" >&2
+    exit 1
+  fi
+}
+
 stage_payload() {
   local dest="$1"
-  rsync -a --delete \
-    --exclude '.git/' --exclude '.github/' --exclude 'scripts/' \
-    --exclude '.gitignore' --exclude 'CLAUDE.md' --exclude '.DS_Store' \
-    --include '*/' \
-    --include '*.html' --include '*.css' --include '*.js' --include '*.json' \
-    --include '*.png' --include '*.jpg' --include '*.jpeg' \
-    --include '*.svg' --include '*.ico' --include '*.webp' --include '*.woff*' \
-    --exclude '*' \
-    "${REPO_DIR}/" "${dest}/"
+  rsync -a --delete "${RSYNC_FILTERS[@]}" "${REPO_DIR}/" "${dest}/"
+  assert_dashboard "${dest}"
 }
 
 install_web_root() {
@@ -69,15 +96,9 @@ else
   fi
   echo "→ Stage to ${REMOTE_HOST}:${REMOTE_STAGE}"
   ${RSYNC_SSH} "${REMOTE_HOST}" "rm -rf ${REMOTE_STAGE} && mkdir -p ${REMOTE_STAGE}"
-  rsync -avz -e "${RSYNC_SSH}" \
-    --exclude '.git/' --exclude '.github/' --exclude 'scripts/' \
-    --exclude '.gitignore' --exclude 'CLAUDE.md' --exclude '.DS_Store' \
-    --include '*/' \
-    --include '*.html' --include '*.css' --include '*.js' --include '*.json' \
-    --include '*.png' --include '*.jpg' --include '*.jpeg' \
-    --include '*.svg' --include '*.ico' --include '*.webp' --include '*.woff*' \
-    --exclude '*' \
+  rsync -avz -e "${RSYNC_SSH}" "${RSYNC_FILTERS[@]}" \
     "${REPO_DIR}/" "${REMOTE_HOST}:${REMOTE_STAGE}/"
+  ${RSYNC_SSH} "${REMOTE_HOST}" "test -f ${REMOTE_STAGE}/dashboard/index.html && test -f ${REMOTE_STAGE}/dashboard/app.js && test -f ${REMOTE_STAGE}/dashboard/style.css && test -f ${REMOTE_STAGE}/dashboard/data/dashboard.json && test -f ${REMOTE_STAGE}/dashboard/favicon.svg && test -f ${REMOTE_STAGE}/dashboard/vendor/fonts/fonts.css && ls ${REMOTE_STAGE}/dashboard/vendor/fonts/*.woff2 >/dev/null"
   ${RSYNC_SSH} "${REMOTE_HOST}" "printf '%s\\n' '${VERSION_JSON}' > ${REMOTE_STAGE}/version.json"
   echo "→ Sync into ${WEB_ROOT} (caddy-owned)"
   ${RSYNC_SSH} "${REMOTE_HOST}" "sudo mkdir -p ${WEB_ROOT} && \
