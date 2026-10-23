@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Are You Being Billed Correctly? · Agent U</title>
+<meta name="description" content="Track changing AI model prices, token pools and tools. Free daily AI model brief.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Cormorant+Garamond:wght@600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<!-- MailerLite Universal --><script>(function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[]).push(arguments);},l=d.createElement(e),l.async=1,l.src=u,n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})(window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');ml('account','2731039');</script><!-- End MailerLite Universal -->
+<style>
+:root{
+  --navy:#12193F; --navy2:#1B2350; --navy3:#28336B;
+  --indigo:#243469; --indigo-d:#1A2650; --indigo-soft:#ECEEF6; --indigo-line:#C4CBE0;
+  --gold:#C6A241; --gold-d:#A9852B; --gold-ink:#8A6410; --gold-soft:#F4EBCF; --gold-line:#E4D3A0;
+  --paper:#F7F3E8; --white:#FFFFFF; --ink:#1C2135; --slate:#5C6480; --faint:#8A91AC;
+  --line:#E7E0CF; --good:#178A50; --good-soft:#E7F4EC; --warn:#B7791F; --warn-soft:#FCF3E3;
+  --bad:#C43D3D; --bad-soft:#FBEBEB; --ice:#D7DEF2;
+  --ui:'Inter',system-ui,-apple-system,sans-serif; --disp:'Newsreader',Georgia,serif; --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --sh:0 1px 2px rgba(23,29,63,.05),0 4px 14px rgba(23,29,63,.06);
+  --sh-lg:0 8px 32px rgba(23,29,63,.14);
+  --r:10px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{animation:none!important;transition:none!important}}
+body{font-family:var(--ui);color:var(--ink);background:var(--paper);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:var(--indigo);text-decoration:none}
+a:hover{text-decoration:underline}
+:focus-visible{outline:2px solid var(--indigo);outline-offset:2px;border-radius:4px}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right}
+.kicker{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-ink)}
+.kicker::before{content:"";display:inline-block;width:16px;height:1.5px;background:var(--gold);vertical-align:middle;margin-right:8px;margin-bottom:2px}
+.good{color:var(--good)}.bad{color:var(--bad)}
+.btn{display:inline-flex;align-items:center;gap:7px;border:1px solid transparent;border-radius:8px;padding:9px 16px;font-size:13.5px;font-weight:600;background:var(--indigo);color:#fff;transition:background .15s}
+.btn:hover{background:var(--indigo-d);text-decoration:none}
+.btn.gold{background:var(--gold);color:var(--navy);border-color:var(--gold-d)}
+.btn.gold:hover{background:var(--gold-d);color:var(--navy)}
+.btn.sm{padding:5px 11px;font-size:12.5px;border-radius:7px}
+.btn.big{padding:13px 24px;font-size:15px}
+.mk{background:#fff}
+.mnav{position:sticky;top:0;z-index:50;background:rgba(18,25,63,.94);backdrop-filter:blur(8px);color:#fff;display:flex;align-items:center;gap:26px;padding:0 max(24px,5vw);height:60px;border-bottom:1px solid rgba(198,162,65,.5)}
+.mnav .brand{display:flex;align-items:center;gap:10px;font-family:var(--disp);font-weight:600;font-size:18px;letter-spacing:.01em;color:#fff}
+.mnav .brand:hover{text-decoration:none}
+.mnav .brand .crestmk{width:26px;height:31px;display:block;flex:none}
+.mnav a.ml{color:#C9C0A6;font-size:13.5px;font-weight:500}
+.mnav a.ml:hover{color:var(--gold);text-decoration:none}
+.mnav a.ml[aria-current="page"]{color:var(--gold)}
+.crestmk .fill-navy{fill:#12193F}.crestmk .st-gold{stroke:#C6A241}.crestmk .fill-gold{fill:#C6A241}
+.mnav .sp{flex:1}
+.hero{background:var(--navy);color:#fff;padding:72px max(24px,5vw) 80px}
+.hero .kicker{color:var(--gold)}
+.hero h1{font-family:var(--disp);font-size:clamp(36px,5vw,58px);font-weight:600;line-height:1.08;letter-spacing:-.01em;max-width:14ch;margin-top:14px}
+.problem{list-style:none;margin:22px 0 28px;padding:0;max-width:62ch}
+.problem li{position:relative;padding:7px 0 7px 22px;color:#B9C1E4;font-size:16.5px;line-height:1.55}
+.problem li::before{content:"";position:absolute;left:0;top:16px;width:8px;height:8px;border-radius:50%;background:var(--gold)}
+.sect{padding:76px max(24px,5vw);scroll-margin-top:76px}
+.sect.alt{background:var(--paper)}
+.sect .shead{max-width:760px;margin-bottom:28px}
+.sect h2{font-family:var(--disp);font-size:clamp(26px,3vw,36px);font-weight:600;line-height:1.15;margin-top:10px}
+.sect h3{font-family:var(--disp);font-size:clamp(22px,2.4vw,28px);font-weight:600;line-height:1.2;margin:40px 0 8px}
+.sect .ssub{font-size:15px;color:var(--slate);margin-top:12px;line-height:1.65}
+.actions{display:flex;align-items:center;gap:18px;flex-wrap:wrap;margin-top:22px}
+.textlink{font-weight:600;font-size:14.5px}
+.tblwrap{overflow-x:auto;-webkit-overflow-scrolling:touch;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:var(--sh)}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);text-align:left;padding:12px 14px;border-bottom:1px solid var(--line);white-space:nowrap;background:var(--paper)}
+.tbl td{padding:11px 14px;border-bottom:1px solid #EEF1F8;vertical-align:middle;white-space:nowrap}
+.tbl tr:last-child td{border-bottom:none}
+.tbl .num{white-space:nowrap}
+.tbl a{font-weight:600}
+.panel{background:#fff;border:1px solid var(--line);border-radius:14px;padding:28px;box-shadow:var(--sh);border-top:3px solid var(--gold);max-width:720px}
+.panel h2{margin-top:8px}
+.panel .ssub{margin:12px 0 22px}
+.sponsor{margin-top:28px;color:var(--slate);font-size:14.5px;max-width:62ch}
+.signup{margin-top:28px;max-width:640px}
+.foot{background:#10152F;color:#8F99C6;padding:36px max(24px,5vw);font-size:12.8px;display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.foot a{color:#AEB7DE}
+@media(max-width:960px){
+  .hero{padding:48px 20px 56px}
+  .mnav{gap:14px;padding:0 16px}
+  .mnav a.ml{display:none}
+  .sect{padding:56px 20px}
+  .foot{padding:28px 20px}
+}
+</style>
+</head>
+<body>
+<div class="mk">
+<nav class="mnav">
+  <a class="brand" href="/"><span class="crestmk"><svg viewBox="0 0 30 31" aria-hidden="true"><path class="fill-navy st-gold" stroke-width="1.5" d="M2 2 H28 V15 Q28 25 15 30 Q2 25 2 15 Z"/><text x="15" y="21" text-anchor="middle" font-family="'Cormorant Garamond',serif" font-weight="700" font-size="16" letter-spacing="-1" class="fill-gold">AU</text></svg></span> Agent U</a>
+  <a class="ml" href="/#why">Why</a>
+  <a class="ml" href="/#analytics">Analytics</a>
+  <a class="ml" href="/#product">Product</a>
+  <a class="ml" href="/#pricing">Pricing</a>
+  <a class="ml" href="/#faq">FAQ</a>
+  <a class="ml" href="/billing-accuracy/" aria-current="page">Billing</a>
+  <span class="sp"></span>
+  <a class="ml" href="/#/login">Sign in</a>
+  <a class="btn gold sm" href="/#/signup">Sign up</a>
+</nav>
+
+<header class="hero">
+  <span class="kicker">Billing accuracy</span>
+  <h1>Are You Being Billed Correctly?</h1>
+  <ul class="problem">
+    <li>AI model prices change without warning, sometimes overnight.</li>
+    <li>Token pools, cache rates and tool fees are billed in different ways by every vendor.</li>
+    <li>Buyers who don't track the changes pay for them.</li>
+  </ul>
+  <a class="btn gold big" href="#subscribe">Subscribe</a>
+</header>
+
+<main>
+<section class="sect" id="changes">
+  <div class="shead">
+    <span class="kicker">Price tracker</span>
+    <h2>Recent Model Price Changes</h2>
+    <p class="ssub">Prices as of Oct 21, 2026, 10:58 PM CT. USD per 1M tokens. Each row links to the vendor's own pricing page.</p>
+  </div>
+  <div class="tblwrap">
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th scope="col">Vendor</th>
+          <th scope="col">Model</th>
+          <th scope="col">Token Type</th>
+          <th scope="col">Old</th>
+          <th scope="col">New</th>
+          <th scope="col">Effective</th>
+          <th scope="col">Source</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Mistral</td>
+          <td class="mono">mistral-large-4</td>
+          <td>Input</td>
+          <td class="num">$0.68</td>
+          <td class="num"><b class="bad">$1.36</b></td>
+          <td>Oct 21, 2026</td>
+          <td><a href="https://docs.mistral.ai/inference/pricing" rel="noopener">Mistral pricing</a></td>
+        </tr>
+        <tr>
+          <td>Mistral</td>
+          <td class="mono">mistral-large-4</td>
+          <td>Cached input</td>
+          <td class="num">$0.07</td>
+          <td class="num"><b class="bad">$0.14</b></td>
+          <td>Oct 21, 2026</td>
+          <td><a href="https://docs.mistral.ai/inference/pricing" rel="noopener">Mistral pricing</a></td>
+        </tr>
+        <tr>
+          <td>Mistral</td>
+          <td class="mono">mistral-large-4</td>
+          <td>Cache write</td>
+          <td class="num">$0.68</td>
+          <td class="num"><b class="bad">$1.36</b></td>
+          <td>Oct 21, 2026</td>
+          <td><a href="https://docs.mistral.ai/inference/pricing" rel="noopener">Mistral pricing</a></td>
+        </tr>
+        <tr>
+          <td>Mistral</td>
+          <td class="mono">mistral-large-4</td>
+          <td>Output</td>
+          <td class="num">$2.09</td>
+          <td class="num"><b class="bad">$4.18</b></td>
+          <td>Oct 21, 2026</td>
+          <td><a href="https://docs.mistral.ai/inference/pricing" rel="noopener">Mistral pricing</a></td>
+        </tr>
+        <tr>
+          <td>Mistral</td>
+          <td class="mono">mistral-large</td>
+          <td>Cached input</td>
+          <td class="num">$0.125</td>
+          <td class="num"><b class="good">$0.05</b></td>
+          <td>Oct 19, 2026</td>
+          <td><a href="https://docs.mistral.ai/inference/pricing" rel="noopener">Mistral pricing</a></td>
+        </tr>
+        <tr>
+          <td>Mistral</td>
+          <td class="mono">mistral-small</td>
+          <td>Cached input</td>
+          <td class="num">$0.025</td>
+          <td class="num"><b class="good">$0.015</b></td>
+          <td>Oct 19, 2026</td>
+          <td><a href="https://docs.mistral.ai/inference/pricing" rel="noopener">Mistral pricing</a></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Newly Tracked Models</h3>
+  <p class="ssub">Prices first recorded in the last 14 days, USD per 1M tokens.</p>
+  <div class="tblwrap">
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th scope="col">Vendor</th>
+          <th scope="col">Model</th>
+          <th scope="col">Input</th>
+          <th scope="col">Cached Input</th>
+          <th scope="col">Output</th>
+          <th scope="col">Recorded</th>
+          <th scope="col">Source</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Alibaba</td>
+          <td class="mono">qwen-3.6-35b-a3b</td>
+          <td class="num">$0.375</td>
+          <td class="num">$0.375</td>
+          <td class="num">$2.25</td>
+          <td>Oct 20, 2026</td>
+          <td><a href="https://www.alibabacloud.com/help/en/model-studio/model-pricing" rel="noopener">Alibaba pricing</a></td>
+        </tr>
+        <tr>
+          <td>Alibaba</td>
+          <td class="mono">qwen-3.8-max</td>
+          <td class="num">$2.00</td>
+          <td class="num">$0.25</td>
+          <td class="num">$6.00</td>
+          <td>Oct 20, 2026</td>
+          <td><a href="https://www.alibabacloud.com/help/en/model-studio/model-pricing" rel="noopener">Alibaba pricing</a></td>
+        </tr>
+        <tr>
+          <td>Meta</td>
+          <td class="mono">muse-spark-1.3</td>
+          <td class="num">$1.25</td>
+          <td class="num">$0.15</td>
+          <td class="num">$4.25</td>
+          <td>Oct 20, 2026</td>
+          <td><a href="https://dev.meta.ai/docs/pricing-rate-limits" rel="noopener">Meta pricing</a></td>
+        </tr>
+        <tr>
+          <td>Moonshot</td>
+          <td class="mono">kimi-k2.7-code-highspeed</td>
+          <td class="num">$1.90</td>
+          <td class="num">$0.38</td>
+          <td class="num">$8.00</td>
+          <td>Oct 20, 2026</td>
+          <td><a href="https://platform.kimi.ai/docs/pricing/chat" rel="noopener">Moonshot pricing</a></td>
+        </tr>
+        <tr>
+          <td>StepFun</td>
+          <td class="mono">step-5-preview</td>
+          <td class="num">$1.00</td>
+          <td class="num">$0.10</td>
+          <td class="num">$2.70</td>
+          <td>Oct 20, 2026</td>
+          <td><a href="https://platform.stepfun.ai/docs/en/guides/pricing/details" rel="noopener">StepFun pricing</a></td>
+        </tr>
+        <tr>
+          <td>Tencent</td>
+          <td class="mono">hy3</td>
+          <td class="num">$0.132</td>
+          <td class="num">$0.033</td>
+          <td class="num">$0.528</td>
+          <td>Oct 20, 2026</td>
+          <td><a href="https://www.tencentcloud.com/document/product/1300/78937" rel="noopener">Tencent pricing</a></td>
+        </tr>
+        <tr>
+          <td>Tencent</td>
+          <td class="mono">hy4-preview</td>
+          <td class="num">$0.834</td>
+          <td class="num">$0.042</td>
+          <td class="num">$2.501</td>
+          <td>Oct 20, 2026</td>
+          <td><a href="https://www.tencentcloud.com/document/product/1300/78937" rel="noopener">Tencent pricing</a></td>
+        </tr>
+        <tr>
+          <td>Xiaomi</td>
+          <td class="mono">mimo-v2.6-flash</td>
+          <td class="num">$0.14</td>
+          <td class="num">$0.0028</td>
+          <td class="num">$0.28</td>
+          <td>Oct 20, 2026</td>
+          <td><a href="https://mimo.mi.com/docs/en-US/price/pay-as-you-go" rel="noopener">Xiaomi pricing</a></td>
+        </tr>
+        <tr>
+          <td>Xiaomi</td>
+          <td class="mono">mimo-v2.6-pro</td>
+          <td class="num">$0.435</td>
+          <td class="num">$0.0036</td>
+          <td class="num">$0.87</td>
+          <td>Oct 20, 2026</td>
+          <td><a href="https://mimo.mi.com/docs/en-US/price/pay-as-you-go" rel="noopener">Xiaomi pricing</a></td>
+        </tr>
+        <tr>
+          <td>Xiaomi</td>
+          <td class="mono">mimo-v2.6-pro-ultraspeed</td>
+          <td class="num">$4.35</td>
+          <td class="num">$0.036</td>
+          <td class="num">$8.70</td>
+          <td>Oct 20, 2026</td>
+          <td><a href="https://mimo.mi.com/docs/en-US/price/pay-as-you-go" rel="noopener">Xiaomi pricing</a></td>
+        </tr>
+        <tr>
+          <td>MiniMax</td>
+          <td class="mono">minimax-m3.1-flash</td>
+          <td class="num">$0.15</td>
+          <td class="num">$0.015</td>
+          <td class="num">$0.60</td>
+          <td>Oct 19, 2026</td>
+          <td><a href="https://platform.minimax.io/docs/pricing/overview" rel="noopener">MiniMax pricing</a></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="sect alt" id="subscribe">
+  <div class="shead">
+    <span class="kicker">Free</span>
+    <h2>Get the Daily Model Brief Free</h2>
+    <p class="ssub">Price changes, new models and billing changes from the vendors' own pages, every morning.</p>
+  </div>
+  <div class="actions">
+    <a class="btn gold big" href="#subscribe">Subscribe</a>
+    <a class="textlink" href="https://jerrywlambert.com/briefings/2026-10-21/">Read the latest brief</a>
+  </div>
+  <div class="ml-embedded signup" data-form="YWDlJZ"></div>
+</section>
+
+<section class="sect" id="bill-check">
+  <div class="panel">
+    <span class="kicker">Coming soon</span>
+    <h2>Bill Check, Coming Soon</h2>
+    <p class="ssub">For FinOps, finance and engineering leads who want to know their AI bill matches the published rates.</p>
+    <a class="btn gold" href="mailto:me@jerrywlambert.com?subject=Bill%20check%20waitlist">Join the waitlist</a>
+  </div>
+  <p class="sponsor">Interested in sponsoring the brief? <a href="mailto:me@jerrywlambert.com?subject=Sponsor%20inquiry">Email me@jerrywlambert.com</a></p>
+</section>
+</main>
+
+<footer class="foot">
+  <div><strong style="color:var(--gold)">Agent U</strong> · SmarterDev.ai · Denton, TX<br>© 2026 · All rights reserved</div>
+  <div><a href="/">Home</a> · <a href="#subscribe">Subscribe</a> · <a href="mailto:me@jerrywlambert.com">Contact</a></div>
+</footer>
+</div>
+</body>
+</html>
