@@ -4,7 +4,7 @@ const $ = s => document.querySelector(s), esc = s => String(s ?? '').replace(/[&
 const mname = id => (D.models[id] || {}).name || id, mvend = id => (D.models[id] || {}).vendor || 'Unknown';
 const label = m => { const k = D.key.find(k => k.metric === m.id); return k ? k.label : m.name.replace(/_/g, ' '); };
 const fmt = (v, u) => v == null ? '-' : (u && u.startsWith('USD') ? '$' + (+v).toFixed(v < 1 ? 3 : 2) : Math.abs(v) >= 1000 ? Math.round(v).toLocaleString() : (+v).toFixed(Math.abs(v) < 1 ? 3 : 1));
-const cite = asof => `<div class="cite">As of ${esc(asof || 'n/a')}</div>`;
+const cite = asof => `<div class="cite asof">As of ${esc(asof || 'n/a')}</div>`;
 const mlink = id => `<a class="m" href="#model=${encodeURIComponent(id)}">${esc(mname(id))}</a>`;
 function readHash() { S = Object.fromEntries(new URLSearchParams(location.hash.slice(1))); }
 function writeHash() { const p = new URLSearchParams(); for (const k of ['vendor','metric','from','to','q']) if (S[k]) p.set(k, S[k]); location.hash = p.toString(); }
@@ -79,7 +79,7 @@ function overview() {
   const metric = S.metric && D.metrics[S.metric] ? +S.metric : null;
   const scatterMetric = metric || (D.key[0] || {}).metric;
   const last = D.updated;
-  let h = `<div class="kpis"><div class="kpi"><b>${D.counts.models.toLocaleString()}</b><span>models tracked</span></div><div class="kpi"><b>${D.counts.vendors}</b><span>vendors</span></div><div class="kpi"><b>${D.counts.metrics}</b><span>metrics</span></div><div class="kpi"><b>${esc(last)}</b><span>latest sweep</span></div></div>`;
+  let h = `<div class="kpis"><div class="kpi"><b>${D.counts.models.toLocaleString()}</b><span>models tracked</span></div><div class="kpi"><b>${D.counts.vendors}</b><span>vendors</span></div><div class="kpi"><b>${D.counts.metrics}</b><span>metrics</span></div><div class="kpi"><b class="date">${esc(last)}</b><span>latest sweep</span></div></div>`;
   const filt = ['vendor', 'metric', 'q', 'from', 'to'].filter(k => S[k]);
   if (filt.length) h += `<div class="note">Filtered view: ${filt.map(k => `${k} = <b>${esc(k === 'metric' ? label(D.metrics[S[k]]) : S[k])}</b>`).join(', ')}</div>`;
   h += `<h2>Leaders by Key Metric</h2><p class="lede">Top models on each headline metric, with as-of dates.</p><div class="grid g4">${(metric ? [{metric, label: label(D.metrics[metric])}] : D.key).map(k => leaderCard(k.metric, k.label)).join('') || '<div class="note">No models match these filters.</div>'}</div>`;

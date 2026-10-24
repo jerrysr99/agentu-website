@@ -36,3 +36,29 @@ svg.chart{width:100%;display:block}svg text{font-family:var(--ui)}
 .drill h1{font:500 36px var(--disp);color:var(--navy);margin:24px 0 2px}.back{color:var(--gold-ink);cursor:pointer;font-weight:600;text-decoration:none}
 .foot{color:var(--slate);font-size:12px;padding:30px 28px 50px;border-top:1px solid var(--line);margin-top:40px}
 .foot li{margin:3px 0}
+@media (max-width:900px){
+img,svg{max-width:100%}
+.wrap{padding:0 16px}.hero{padding:18px 16px 26px}.hero h1{font-size:30px}
+.kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.g4{grid-template-columns:repeat(2,minmax(0,1fr))}.g2,.g3{grid-template-columns:minmax(0,1fr)}
+.card table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.scroll table{display:table}
+td.vd,.vd,.cite.asof{white-space:nowrap}
+}
+@media (max-width:640px){
+.nav{flex-wrap:wrap;height:auto;padding-top:10px;padding-bottom:10px;gap:4px}.brand{font-size:16px}.brand .sub{font-size:12px}.built{font-size:11px}
+.hero h1{font-size:26px}.msg{font-size:15px}
+.filters{padding:12px;gap:10px;margin-left:16px;margin-right:16px}
+.filters label{flex:1 1 calc(50% - 5px);min-width:0}
+.filters select,.filters input{min-width:0;max-width:none;width:100%}
+.filters label:nth-of-type(3){flex-basis:100%}
+.filters button{flex:1 1 100%}
+.kpi{padding:12px;min-width:0}.kpi b{font-size:24px;overflow-wrap:anywhere}.kpi b.date{font-size:20px}
+.g4{grid-template-columns:minmax(0,1fr)}
+.card{padding:14px}
+.card h3{flex-direction:column;gap:2px}
+h2{font-size:22px}
+.bar .l{width:96px}.bar .c{width:56px}
+.drill h1{font-size:28px;overflow-wrap:anywhere}
+}
+@media (min-width:480px) and (max-width:640px){.g4{grid-template-columns:repeat(2,minmax(0,1fr))}}
