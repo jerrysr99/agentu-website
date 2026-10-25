@@ -623,15 +623,19 @@ function pageMarketing(){
      </svg>
      <span class="kicker" style="color:var(--gold)">The smart proxy of record for LLM traffic</span>
      <h1>One place to manage all of your <em>agentic spend</em>, to track it, manage it and reconcile it.</h1>
-     <p class="hsub">Agent U puts 55 models across 12 providers behind a single governed key. Every prompt and token is metered, rated, reported, and reconciled on one platform, priced at the tariff in force and matched to the invoice.</p>
+     <p class="hsub">Agent U tracks 1,934 models and puts every priced one behind a single governed key. Every prompt and token is metered, rated, reported, and reconciled on one platform, priced at the tariff in force and matched to the invoice.</p>
      <a class="btn gold big" href="#/" onclick="event.preventDefault();startDemo()">Take the tour</a>
      <a class="btn ghost-dark big" href="#/login" style="margin-left:10px">Sign in</a>
      <div class="hstats">
-      <div class="hstat"><div class="n">55</div><div class="t">Models</div></div>
-      <div class="hstat"><div class="n">12</div><div class="t">Providers</div></div>
+      <div class="hstat"><div class="n">1,934</div><div class="t">Models tracked</div></div>
+      <div class="hstat"><div class="n">13.1%</div><div class="t">Price audited</div></div>
+      <div class="hstat"><div class="n">5.3%</div><div class="t">Unaudited price</div></div>
+      <div class="hstat"><div class="n">47.6%</div><div class="t">No public price</div></div>
+      <div class="hstat"><div class="n">34.0%</div><div class="t">Duplicate listings</div></div>
       <div class="hstat"><div class="n">1</div><div class="t">Governed key</div></div>
       <div class="hstat"><div class="n">100%</div><div class="t">Rated TDR audit</div></div>
      </div>
+     <p class="hsub" style="font-size:13px;margin-top:14px">Licenses across tracked models: 44.9% proprietary · 18.9% open source · 13.2% open weights · 23.0% license not yet verified.</p>
     </div>
     <div class="ledger" aria-label="Live rated transaction ledger">
      <div class="lh"><span>Rated transaction ledger</span><span class="live"><i></i>LIVE</span></div>
@@ -1170,7 +1174,7 @@ function mapProvider(p){
 async function loadProviders(repaint){
   const r=await api('/catalog/providers');
   if(!r.ok||!r.data||!Array.isArray(r.data.providers)||!r.data.providers.length)return;
-  const mapped=r.data.providers.map(mapProvider).sort((a,b)=>a.n.localeCompare(b.n));
+  const mapped=r.data.providers.map(mapProvider).filter(m=>!HIDDEN_PROV.includes(m.id)).sort((a,b)=>a.n.localeCompare(b.n));
   PROVIDERS.length=0;mapped.forEach(m=>PROVIDERS.push(m));
   buildLiveModels(r.data.providers);
   S.provLive=true;S.provAt=r.data.generated_at||'';
@@ -1193,13 +1197,15 @@ function buildLiveModels(provs){
   Object.keys(MODELS).forEach(k=>delete MODELS[k]);
   Object.assign(MODELS,live);
 }
+function pctNZ(a,b){if(!b)return'not observed';const v=Math.round(1000*a/b)/10;return v>0?v.toFixed(1)+'%':'not observed'}
+const HIDDEN_PROV=['typesafe','jev'];
 function fmtTok(n){n=Number(n)||0;return n>=1e6?(n/1e6).toFixed(n%1e6?1:0)+'M tokens':n>=1e3?Math.round(n/1e3)+'K tokens':n+' tokens'}
 function applyProviderStats(){
   if(!S.provLive)return;
   const total=PROVIDERS.reduce((s,p)=>s+(p.models||0),0),active=PROVIDERS.reduce((s,p)=>s+(p.active||0),0);
   const set=(id,html)=>{const el=$('#'+id);if(el)el.innerHTML=html};
-  set('dash-models',active+'<span style="font-size:13px;color:var(--faint)">/'+total+'</span>');
-  set('dash-provct',PROVIDERS.length+' providers');
+  set('dash-models',pctNZ(active,total));
+  set('dash-provct','of 1,934 models tracked');
 }
 async function loadUsage(days,dashOnly){
   const r=await api('/account/usage?days='+days);
@@ -1328,7 +1334,7 @@ const TOUR=[
  {route:'#/app',sel:'.statgrid',title:'Your dashboard',body:'Spend, requests and tokens across every provider, rated to the tariff in force. In a live account these tiles show your real figures.'},
  {route:'#/app/usage',sel:'.statgrid',title:'Usage & metering',body:'Every request is metered by input, output, cache and reasoning tokens, then rated per million. Slice it by key, model or app.'},
  {route:'#/app/ratecards',sel:'.content .card',title:'Rate cards',body:'The tariff of record. Each model carries a per-million rate with an effective date, so any charge can be traced back to the invoice.'},
- {route:'#/app/keys',sel:'.content .card',title:'Governed keys',body:'One cpk_ key in front of 55 models. Issue, rotate and revoke. Your apps never hold a provider credential again.'},
+ {route:'#/app/keys',sel:'.content .card',title:'Governed keys',body:'One cpk_ key in front of every priced model. Issue, rotate and revoke. Your apps never hold a provider credential again.'},
  {route:'#/app/advisory',sel:'.content',title:'Model advisory',body:'Give Agent U your constraints, budget, latency, compliance, and it recommends the model, the alternative, and the non-starters.'},
  {route:'#/app/audit',sel:'.content .card',title:'Audit log',body:'Every policy decision and config change, timestamped and attributable. The evidence layer under the whole platform.'}
 ];
@@ -1684,13 +1690,13 @@ function pageProviders(){
      <div style="display:flex;align-items:center;gap:8px"><strong>${p.n}</strong>${p.tier?`<span class="badge ${p.tier==='FRONTIER'?'frontier':'strong'}">${p.tier}</span>`:''}<span style="margin-left:auto" onclick="event.stopPropagation()">${sw(p.on,`togProv('${p.id}')`)}</span></div>
      <div class="faint" style="font-size:12px;margin:2px 0 10px">${p.c}</div>
      <div style="display:flex;gap:8px;text-align:center">
-      ${[['MODELS',p.models],['ACTIVE',p.active],['DEPR',p.dep]].map(x=>`<div style="flex:1;background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:7px 4px"><div class="mono" style="font-size:16px;font-weight:600">${x[1]}</div><div style="font-size:9.5px;font-weight:700;letter-spacing:.08em;color:var(--faint)">${x[0]}</div></div>`).join('')}
+      ${[['MODELS',pctNZ(p.models,PROVIDERS.reduce((s,q)=>s+(q.models||0),0))],['ACTIVE',pctNZ(p.active,p.models)],['DEPR',p.dep?pctNZ(p.dep,p.models):'none']].map(x=>`<div style="flex:1;background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:7px 4px"><div class="mono" style="font-size:16px;font-weight:600">${x[1]}</div><div style="font-size:9.5px;font-weight:700;letter-spacing:.08em;color:var(--faint)">${x[0]}</div></div>`).join('')}
      </div>
      <div class="mono" style="font-size:11px;margin-top:10px;color:var(--slate)">${p.pr}</div>
      <div style="margin-top:6px">${p.tags.slice(0,4).map(t=>`<span class="tag">${t}</span>`).join('')}${p.tags.length>4?`<span class="tag">+${p.tags.length-4}</span>`:''}</div>
     </div></div>`).join('');
   const tModels=PROVIDERS.reduce((s,p)=>s+(p.models||0),0),tAppr=PROVIDERS.reduce((s,p)=>s+(p.active||0),0);
-  const sub=`${tModels} models · ${PROVIDERS.length} providers · ${tAppr} approved for routing`;
+  const sub=`${pctNZ(tAppr,tModels)} approved for routing`;
   return appShell('Providers',sub,
    `<div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(235px,1fr))">${cards}</div>`,
    `<button class="btn ghost sm" onclick="toast('Wire: POST /v1/orgs/:org/providers: request a provider')">Request a provider</button>`);
@@ -1705,7 +1711,7 @@ function openProvider(id){
    <div class="dh" style="margin-top:8px">${p.n}</div>
    <div>${p.tags.map(t=>`<span class="tag">${t}</span>`).join('')}</div>
    <div class="dsec">Overview</div>
-   <div class="kv">${[['Total models',p.models],['Active',p.active],['Deprecated',p.dep],['Price range',p.pr]].map(x=>`<div class="cell"><div class="k">${x[0]}</div><div class="v">${x[1]}</div></div>`).join('')}</div>
+   <div class="kv">${[['Share of models',pctNZ(p.models,PROVIDERS.reduce((s,q)=>s+(q.models||0),0))],['Active',pctNZ(p.active,p.models)],['Deprecated',p.dep?pctNZ(p.dep,p.models):'none'],['Price range',p.pr]].map(x=>`<div class="cell"><div class="k">${x[0]}</div><div class="v">${x[1]}</div></div>`).join('')}</div>
    <div class="dsec">Models</div>
    ${ms.length?`<div class="tblwrap"><table class="tbl"><thead><tr><th>Model</th><th>Speed</th><th>Tier</th><th class="num">In /1M</th></tr></thead><tbody>
     ${ms.map(m=>`<tr class="rowlink" onclick="openModel('${id}','${m[1]}')"><td><strong>${m[0]}</strong><br><span class="mono faint" style="font-size:10.5px">${m[1]}</span></td><td><span class="badge ${m[2]==='fast'?'ok':'dim'}">${m[2]}</span></td><td>${m[3]?`<span class="badge frontier">${m[3]}</span>`:'<span class="faint">-</span>'}</td><td class="num mono">${isOpenWeight(m)?'<span class="badge dim">self-host</span>':money(m[4])}</td></tr>`).join('')}</tbody></table></div>`:`<p class="muted" style="font-size:13px">${S.demo?'Model detail seeded for Anthropic, OpenAI, Google, DeepSeek, xAI and Perplexity in this demo.':'No model detail available for this provider yet.'}</p>`}
