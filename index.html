@@ -1730,17 +1730,6 @@ async function loadProviderNews(id){
   if(!items.length){box.innerHTML='<div class="muted" style="font-size:12.5px">No recent stories found.</div>';return}
   box.innerHTML=items.map(it=>`<div style="padding:9px 0;border-bottom:1px solid var(--line);font-size:12.6px"><span class="mono faint" style="font-size:10.5px">${esc((it.date||'').slice(0,10))}</span>${it.source?` <span class="badge dim">${esc(it.source)}</span>`:''}<br><a href="${esc(it.link)}" target="_blank" rel="noopener">${esc(it.title)}</a></div>`).join('');
 }
-// Authoritative Hugging Face org pages for open-weight vendors. Closed/API-only
-// vendors (anthropic, openai, google, xai, amazon, perplexity) get no link — HF
-// hosts no official repo for them, so a search would only surface mirrors.
-const HF_ORG={meta:'meta-llama',mistral:'mistralai',deepseek:'deepseek-ai',alibaba:'Qwen',
-  zhipu:'zai-org',moonshot:'moonshotai',microsoft:'microsoft',minimax:'MiniMaxAI',
-  bytedance:'ByteDance-Seed',cohere:'CohereForAI'};
-function hfLink(pid,name){
-  const org=HF_ORG[(pid||'').toLowerCase()];if(!org)return '';
-  const url='https://huggingface.co/'+org+'?search_models='+encodeURIComponent(name);
-  return `<a class="btn sm ghost" href="${url}" target="_blank" rel="noopener">Hugging Face ↗</a>`;
-}
 // Open-weight models carry no hosted API price (input+output both 0). Show a
 // "self-host" label instead of a misleading $0.00.
 function isOpenWeight(m){return (Number(m[4])||0)===0&&(Number(m[7])||0)===0}
@@ -1792,8 +1781,7 @@ function openModel(pid,slug){
    ${ow?`<p class="muted" style="font-size:12.5px">No hosted rate card — self-hosted open weights.</p>`:`<table class="tbl"><thead><tr><th>Unit</th><th class="num">Price /1M</th><th>Effective</th><th>Ver</th></tr></thead><tbody>
     ${[['Input',m[4]],['Cache read',m[5]],['Cache write',m[6]],['Output',m[7]]].map(r=>`<tr><td>${r[0]}</td><td class="num mono">${money(r[1])}</td><td class="mono" style="font-size:11px">2026-06-19 → now</td><td><span class="badge dim">seed</span></td></tr>`).join('')}</tbody></table>`}
    <div style="margin-top:14px"><button class="btn sm" onclick="toast('Try Model — wire to playground POST /v1/chat/completions')">Try model</button>
-   <button class="btn sm ghost" onclick="go('#/app/ratecards');closeDrawer()">Open rate card</button>
-   ${hfLink(pid,m[0])}</div>`);
+   <button class="btn sm ghost" onclick="go('#/app/ratecards');closeDrawer()">Open rate card</button></div>`);
 }
 
 /* ---------- Smart model routing ---------- */
