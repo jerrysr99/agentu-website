@@ -355,9 +355,32 @@ def extract_edition(page_html: str, date: str) -> dict:
     }
 
 
+# Public pages never name data sources, collection method, or vendor docs/pricing URLs.
+SOURCE_TERMS = re.compile(
+    r"artificial ?analysis|\bLMSYS\b|LMArena|chatbot arena|OpenRouter|\bEpoch (?:AI|notable)\b"
+    r"|pricing pages?|price pages?|leaderboard read|read cleanly|returned 403|did not render"
+    r"|trending on Hugging Face|\bAA's\b|AA-estimated",
+    re.I,
+)
+SOURCE_URLS = re.compile(
+    r"\b(?:docs|platform|dev|developers?|help|api-docs|console|cloud)\.[a-z0-9-]+(?:\.[a-z0-9-]+)*\.(?:ai|com|io|cn|dev|co)\b"
+    r"|\b[a-z0-9-]+(?:\.[a-z0-9-]+)*\.(?:ai|com|io|cn|dev|co)/(?:docs|pricing|help)\b"
+    r"|\b(?:artificialanalysis\.ai|lmarena\.ai|lmsys\.org|openrouter\.ai|huggingface\.co|epoch\.ai)\b",
+    re.I,
+)
+
+
+def source_leaks(page: str) -> list[str]:
+    hits = [m.group(0) for m in SOURCE_TERMS.finditer(page)]
+    return hits + [m.group(0) for m in SOURCE_URLS.finditer(page)]
+
+
 def _write_checked(path: Path, page: str) -> None:
     if "@@" in page:
         raise SystemExit(f"unfilled template token in {path}")
+    leaks = source_leaks(page)
+    if leaks:
+        raise SystemExit(f"public page names a data source in {path}: {sorted(set(leaks))}")
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(page, encoding="utf-8")
 

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib.util
 import shutil
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -57,6 +58,16 @@ SOURCE = """<!DOCTYPE html>
 
 
 class BuildBriefTests(unittest.TestCase):
+    def test_source_names_block_the_write(self):
+        builder = load_builder()
+        for leak in ("Scores from Artificial Analysis.", "Google's pricing page now warns.",
+                     "posted on docs.typesafe.ai/models.md", "ranked on LMArena"):
+            with self.subTest(leak=leak), tempfile.TemporaryDirectory() as tmp:
+                with self.assertRaises(SystemExit):
+                    builder._write_checked(Path(tmp) / "index.html", f"<p>{leak}</p>")
+        with tempfile.TemporaryDirectory() as tmp:
+            builder._write_checked(Path(tmp) / "index.html", "<p>Google now warns. Scores as of Oct 16.</p>")
+
     def test_pages_are_public_clean_and_repeatable(self):
         builder = load_builder()
         root = Path(self.id().replace(".", "_"))

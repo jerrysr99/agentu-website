@@ -1745,7 +1745,7 @@ function hfLink(pid,name){
 // "self-host" label instead of a misleading $0.00.
 function isOpenWeight(m){return (Number(m[4])||0)===0&&(Number(m[7])||0)===0}
 const OW_LABEL='<span class="badge dim" title="Open-weight model — self-host, no hosted API price">Open weights · self-host</span>';
-/* Live LMSYS Text-Arena ELO bars. Ranks every live model that carries an ELO
+/* Live text ELO bars. Ranks every live model that carries an ELO
    (m[10]), always includes the current model, highlights it. Returns '' when no
    live ELO exists (demo mode / no snapshot) so the caller shows illustrative bars. */
 function eloBars(cur){
@@ -1757,11 +1757,11 @@ function eloBars(cur){
   let rows=ranked.slice(0,5);
   if(curElo>0&&!rows.some(r=>r[2])){rows=ranked.slice(0,4);rows.push(ranked.find(r=>r[2]));}
   const bars=rows.map(r=>`<div class="bar"><span class="bl" style="width:160px;${r[2]?'font-weight:700':''}">${r[0]}</span><span class="bt"><i style="width:${Math.max(4,Math.min(100,(r[1]-1300)/2))}%;${r[2]?'':'background:#C7CDE8'}"></i></span><span class="bv">${r[1]}</span></div>`).join('');
-  const note=curElo>0?'':`<p class="muted" style="font-size:12px;margin-top:6px">${cur[0]} isn't ranked on the LMSYS Text Arena (top 20 only). Bars show current frontier models for context.</p>`;
+  const note=curElo>0?'':`<p class="muted" style="font-size:12px;margin-top:6px">${cur[0]} isn't in the top 20 arena ranking. Bars show current frontier models for context.</p>`;
   return bars+note;
 }
-/* Live Artificial Analysis Intelligence Index bars (m[11]). Covers ~100+ models
-   where Arena's top-20 stops. Same shape as eloBars; '' when no live AA data. */
+/* Live Intelligence Index bars (m[11]). Covers ~100+ models
+   where the top-20 ELO list stops. Same shape as eloBars; '' when no live score data. */
 function aaBars(cur){
   const ranked=[];
   Object.keys(MODELS).forEach(k=>MODELS[k].forEach(x=>{const s=Number(x[11])||0;if(s>0)ranked.push([x[0],s,x[1]===cur[1]]);}));
@@ -1771,7 +1771,7 @@ function aaBars(cur){
   let rows=ranked.slice(0,6);
   if(curS>0&&!rows.some(r=>r[2])){rows=ranked.slice(0,5);rows.push(ranked.find(r=>r[2]));}
   const bars=rows.map(r=>`<div class="bar"><span class="bl" style="width:160px;${r[2]?'font-weight:700':''}">${r[0]}</span><span class="bt"><i style="width:${Math.max(4,Math.min(100,r[1]/70*100))}%;${r[2]?'':'background:#C7CDE8'}"></i></span><span class="bv">${r[1]}</span></div>`).join('');
-  const note=curS>0?'':`<p class="muted" style="font-size:12px;margin-top:6px">${cur[0]} has no Artificial Analysis Intelligence score yet.</p>`;
+  const note=curS>0?'':`<p class="muted" style="font-size:12px;margin-top:6px">${cur[0]} has no Intelligence Index score yet.</p>`;
   return bars+note;
 }
 function openModel(pid,slug){
@@ -1785,9 +1785,9 @@ function openModel(pid,slug){
    <div class="kv">${(ow?[['Pricing',OW_LABEL],['Context',m[8]?fmtTok(m[8]):'1M tokens'],['Max output',m[9]?fmtTok(m[9]):'300K tokens']]:[['Input /1M',money(m[4])],['Output /1M',money(m[7])],['Cache read /1M',m[5]>0?money(m[5]):'—'],['Cache write /1M',m[6]>0?money(m[6]):'—'],['Context',m[8]?fmtTok(m[8]):'1M tokens'],['Max output',m[9]?fmtTok(m[9]):'300K tokens']]).map(x=>`<div class="cell"><div class="k">${x[0]}</div><div class="v">${x[1]}</div></div>`).join('')}</div>
    <div class="dsec">Monthly cost estimates</div>
    ${ow?`<p class="muted" style="font-size:12.5px">No metered token cost — open-weight model you host yourself. You pay compute/infra, not per-token API fees.</p>`:`<div class="kv" style="grid-template-columns:1fr 1fr 1fr">${[['1M tokens',money(blended*1e3,2)],['10M',money(blended*1e4,0)],['100M',money(blended*1e5,0)]].map(x=>`<div class="cell"><div class="k">${x[0]}</div><div class="v">${x[1]}</div></div>`).join('')}</div>`}
-   <div class="dsec">Competitive position — Text ELO (Arena)</div>
+   <div class="dsec">Competitive position — Text ELO</div>
    ${eloBars(m)||[['Claude Fable 5',1508],['Claude Opus 4.8',1503],[m[0],1502,true],['Gemini 3.1 Pro',1486]].map(r=>`<div class="bar"><span class="bl" style="width:130px;${r[2]?'font-weight:700':''}">${r[0]}</span><span class="bt"><i style="width:${(r[1]-1400)/1.2}%;${r[2]?'':'background:#C7CDE8'}"></i></span><span class="bv">${r[1]}</span></div>`).join('')}
-   ${(()=>{const aa=aaBars(m);return aa?`<div class="dsec">Intelligence Index — Artificial Analysis</div>${aa}`:'';})()}
+   ${(()=>{const aa=aaBars(m);return aa?`<div class="dsec">Intelligence Index</div>${aa}`:'';})()}
    <div class="dsec">Rate history</div>
    ${ow?`<p class="muted" style="font-size:12.5px">No hosted rate card — self-hosted open weights.</p>`:`<table class="tbl"><thead><tr><th>Unit</th><th class="num">Price /1M</th><th>Effective</th><th>Ver</th></tr></thead><tbody>
     ${[['Input',m[4]],['Cache read',m[5]],['Cache write',m[6]],['Output',m[7]]].map(r=>`<tr><td>${r[0]}</td><td class="num mono">${money(r[1])}</td><td class="mono" style="font-size:11px">2026-06-19 → now</td><td><span class="badge dim">seed</span></td></tr>`).join('')}</tbody></table>`}
