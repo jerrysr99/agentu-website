@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgentU Setup Guide — Base URL and API Key for Every Client</title>
+<meta name="description" content="Point any OpenAI or Anthropic compatible client at AgentU with one base URL and one API key.">
+<link rel="canonical" href="https://agentu.ai/docs/setup/">
+<meta property="og:title" content="AgentU Setup Guide: Base URL and API Key for Every Client">
+<meta property="og:description" content="Point any OpenAI or Anthropic compatible client at AgentU with one base URL and one API key.">
+<meta property="og:url" content="https://agentu.ai/docs/setup/"><meta name="twitter:card" content="summary">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Cormorant+Garamond:wght@600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#12193F; --navy2:#1B2350; --navy3:#28336B;
+  --indigo:#243469; --indigo-d:#1A2650; --indigo-soft:#ECEEF6; --indigo-line:#C4CBE0;
+  --gold:#C6A241; --gold-d:#A9852B; --gold-ink:#8A6410; --gold-soft:#F4EBCF; --gold-line:#E4D3A0;
+  --paper:#F7F3E8; --white:#FFFFFF; --ink:#1C2135; --slate:#5C6480; --faint:#8A91AC;
+  --line:#E7E0CF; --good:#178A50; --good-soft:#E7F4EC; --warn:#B7791F; --warn-soft:#FCF3E3;
+  --bad:#C43D3D; --bad-soft:#FBEBEB; --ice:#D7DEF2;
+  --ui:'Inter',system-ui,-apple-system,sans-serif; --disp:'Newsreader',Georgia,serif; --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --sh:0 1px 2px rgba(23,29,63,.05),0 4px 14px rgba(23,29,63,.06);
+  --sh-lg:0 8px 32px rgba(23,29,63,.14);
+  --r:10px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--ui);color:var(--ink);background:var(--paper);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased}
+a{color:var(--indigo)}
+.mnav{background:var(--navy);padding:14px 32px}.mnav .brand{color:#fff;font-weight:700;font-size:17px;display:inline-flex;align-items:center;gap:10px;text-decoration:none}
+.crestmk svg{width:28px;height:29px}.fill-navy{fill:var(--navy)}.st-gold{stroke:var(--gold)}.fill-gold{fill:var(--gold)}
+main{max-width:820px;margin:0 auto;padding:40px 32px}
+h1{font-family:var(--disp);color:var(--navy);font-size:34px;line-height:1.2;margin-bottom:16px}
+h2{font-family:var(--disp);color:var(--navy);font-size:24px;margin:32px 0 10px}h3{color:var(--navy2);margin:20px 0 8px}
+p{margin:10px 0}code{font-family:var(--mono);font-size:13px}
+pre{background:var(--navy);color:var(--paper);padding:14px;border-radius:var(--r);overflow-x:auto;margin:10px 0}pre code{color:inherit}
+table{border-collapse:collapse;width:100%;background:#fff;margin:10px 0;box-shadow:var(--sh)}td,th{border:1px solid var(--line);padding:8px;text-align:left;vertical-align:top}th{background:var(--navy2);color:#fff}
+.foot{border-top:1px solid var(--line);padding:24px 32px;color:var(--slate);font-size:13px;max-width:820px;margin:0 auto}
+</style></head>
+<body>
+<nav class="mnav"><a class="brand" href="/"><span class="crestmk"><svg viewBox="0 0 30 31" aria-hidden="true"><path class="fill-navy st-gold" stroke-width="1.5" d="M2 2 H28 V15 Q28 25 15 30 Q2 25 2 15 Z"/><text x="15" y="21" text-anchor="middle" font-family="'Cormorant Garamond',serif" font-weight="700" font-size="16" letter-spacing="-1" class="fill-gold">AU</text></svg></span> AgentU</a></nav>
+<main><h1>AgentU Setup Guide: Base URL and API Key for Every Client</h1>
+<p>AgentU is one place to manage all of your agentic spend: track it, manage it, reconcile it. Point your client at AgentU once and every call is tracked, priced against your Tariff, and recorded on a Token Detail Record you can reconcile.</p>
+<h2>Before You Start</h2>
+<p>You need an AgentU API key. Keys begin with <code>cpk_</code>. Keys are issued on request, so contact us to get one.</p>
+<p>Keep the key in an environment variable or a secret store. Never paste it into a chat, a URL, or a file you commit. If a key is ever exposed, contact us to rotate it.</p>
+<h2>The Two Values You Need</h2>
+<table>
+<thead>
+<tr>
+<th>Setting</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Host</td>
+<td><code>https://proxy.agentu.ai</code></td>
+</tr>
+<tr>
+<td>OpenAI compatible base URL</td>
+<td><code>https://proxy.agentu.ai/v1</code></td>
+</tr>
+<tr>
+<td>Anthropic base URL</td>
+<td><code>https://proxy.agentu.ai</code> (the client adds <code>/v1/messages</code> itself)</td>
+</tr>
+<tr>
+<td>Preferred auth header</td>
+<td><code>Authorization: Bearer cpk_...</code></td>
+</tr>
+<tr>
+<td>Anthropic auth header</td>
+<td><code>x-api-key: cpk_...</code> also works</td>
+</tr>
+</tbody>
+</table>
+<p>agentu.ai is the website. It is not an API base URL.</p>
+<h2>Check Your Setup for Free</h2>
+<p>These calls cost nothing:</p>
+<pre><code class="language-bash">curl https://proxy.agentu.ai/v1/models -H &quot;Authorization: Bearer $OPENAI_API_KEY&quot;
+curl https://proxy.agentu.ai/v1/educateme -H &quot;Authorization: Bearer $OPENAI_API_KEY&quot;
+</code></pre>
+<p><code>/v1/models</code> lists the exact model ids your key may call. Use only ids from that list. You can also send <code>auto</code> and let AgentU pick, within your account's policy. If your account requires a named model, <code>auto</code> is refused and you must send an exact id. The examples below use <code>gpt-4.1-mini</code> for OpenAI format clients and <code>claude-haiku-4-5</code> for Anthropic format clients.</p>
+<h2>Grok Bot</h2>
+<p>Add AgentU as an OpenAI compatible provider with these settings:</p>
+<table>
+<thead>
+<tr>
+<th>Setting</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Base URL</td>
+<td><code>https://proxy.agentu.ai/v1</code></td>
+</tr>
+<tr>
+<td>Header</td>
+<td><code>Authorization: Bearer cpk_...</code></td>
+</tr>
+<tr>
+<td>Model</td>
+<td><code>gpt-4.1-mini</code></td>
+</tr>
+</tbody>
+</table>
+<p>Streaming, tool calling, and multi turn chat all work with these settings.</p>
+<h2>Other Tools</h2>
+<p>Any tool that accepts a custom base URL works the same way. Use <code>https://proxy.agentu.ai/v1</code> with your <code>cpk_</code> key if the tool speaks the OpenAI format, or <code>https://proxy.agentu.ai</code> if it speaks the Anthropic format. Then pick a model id from <code>/v1/models</code>.</p>
+<h2>OpenAI Compatible Clients</h2>
+<h3>Environment Variables</h3>
+<pre><code class="language-bash">export OPENAI_BASE_URL=&quot;https://proxy.agentu.ai/v1&quot;
+export OPENAI_API_KEY=&quot;cpk_your_key&quot;
+</code></pre>
+<h3>curl</h3>
+<pre><code class="language-bash">curl https://proxy.agentu.ai/v1/chat/completions \
+  -H &quot;Authorization: Bearer $OPENAI_API_KEY&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d '{&quot;model&quot;: &quot;gpt-4.1-mini&quot;, &quot;messages&quot;: [{&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: &quot;Hello&quot;}], &quot;max_tokens&quot;: 100}'
+</code></pre>
+<h3>Python</h3>
+<pre><code class="language-python">from openai import OpenAI
+
+client = OpenAI()  # reads OPENAI_BASE_URL and OPENAI_API_KEY
+reply = client.chat.completions.create(
+    model=&quot;gpt-4.1-mini&quot;,
+    messages=[{&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: &quot;Hello&quot;}],
+    max_tokens=100,
+)
+print(reply.choices[0].message.content)
+</code></pre>
+<h3>Node</h3>
+<pre><code class="language-javascript">import OpenAI from &quot;openai&quot;;
+
+const client = new OpenAI(); // reads OPENAI_BASE_URL and OPENAI_API_KEY
+const reply = await client.chat.completions.create({
+  model: &quot;gpt-4.1-mini&quot;,
+  messages: [{ role: &quot;user&quot;, content: &quot;Hello&quot; }],
+  max_tokens: 100,
+});
+console.log(reply.choices[0].message.content);
+</code></pre>
+<h2>Anthropic Clients</h2>
+<h3>Environment Variables</h3>
+<pre><code class="language-bash">export ANTHROPIC_BASE_URL=&quot;https://proxy.agentu.ai&quot;
+export ANTHROPIC_API_KEY=&quot;cpk_your_key&quot;
+</code></pre>
+<p>Leave <code>/v1</code> off. The client adds <code>/v1/messages</code> itself.</p>
+<h3>curl</h3>
+<pre><code class="language-bash">curl https://proxy.agentu.ai/v1/messages \
+  -H &quot;x-api-key: $ANTHROPIC_API_KEY&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d '{&quot;model&quot;: &quot;claude-haiku-4-5&quot;, &quot;max_tokens&quot;: 100, &quot;messages&quot;: [{&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: &quot;Hello&quot;}]}'
+</code></pre>
+<h3>Python</h3>
+<pre><code class="language-python">import anthropic
+
+client = anthropic.Anthropic()  # reads ANTHROPIC_BASE_URL and ANTHROPIC_API_KEY
+reply = client.messages.create(
+    model=&quot;claude-haiku-4-5&quot;,
+    max_tokens=100,
+    messages=[{&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: &quot;Hello&quot;}],
+)
+print(reply.content[0].text)
+</code></pre>
+<h3>Node</h3>
+<pre><code class="language-javascript">import Anthropic from &quot;@anthropic-ai/sdk&quot;;
+
+const client = new Anthropic(); // reads ANTHROPIC_BASE_URL and ANTHROPIC_API_KEY
+const reply = await client.messages.create({
+  model: &quot;claude-haiku-4-5&quot;,
+  max_tokens: 100,
+  messages: [{ role: &quot;user&quot;, content: &quot;Hello&quot; }],
+});
+console.log(reply.content[0].text);
+</code></pre>
+<h2>Optional Headers for Cleaner Reconciliation</h2>
+<p>Send these on every call to group spend:</p>
+<table>
+<thead>
+<tr>
+<th>Header</th>
+<th>What it records</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>x-proxy-subclient</code></td>
+<td>The project the work belongs to</td>
+</tr>
+<tr>
+<td><code>x-proxy-app</code></td>
+<td>The role or app making the call</td>
+</tr>
+<tr>
+<td><code>x-proxy-project</code></td>
+<td>A free text tag for grouping work</td>
+</tr>
+<tr>
+<td><code>x-proxy-department</code></td>
+<td>A department slug from <code>GET /v1/departments</code></td>
+</tr>
+</tbody>
+</table>
+<h2>See What You Spent</h2>
+<p><code>GET /v1/spend?days=30</code> shows totals by model, department, and project. <code>GET /v1/usage/{request_id}</code> shows the rated record for one call. Both are free. If no spending cap is set on your account, spend is not limited. If a cap is set, calls past it are refused with a 429 <code>quota_exceeded</code> error.</p>
+<h2>Plans and Pricing</h2>
+<p>Contact us.</p></main>
+<footer class="foot"><strong style="color:var(--gold-ink)">AgentU</strong> · SmarterDev.ai · Denton, TX<br>© 2026 · All rights reserved</footer>
+</body></html>
